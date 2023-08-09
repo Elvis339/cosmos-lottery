@@ -1,0 +1,9 @@
+syntax = "proto3";
+package cosmoslottery.lottery;
+
+option go_package = "cosmos-lottery/x/lottery/types";
+
+message ActiveLottery {
+  uint64 lotteryId = 1; 
+  
+}
