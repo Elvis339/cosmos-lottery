@@ -21,3 +21,8 @@ func KeyPrefix(p string) []byte {
 const (
 	ActiveLotteryKey = "ActiveLottery/value/"
 )
+
+const (
+	LotteryTransactionKey      = "LotteryTransaction/value/"
+	LotteryTransactionCountKey = "LotteryTransaction/count/"
+)

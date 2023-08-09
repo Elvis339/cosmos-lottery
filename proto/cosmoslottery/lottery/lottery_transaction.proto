@@ -1,0 +1,12 @@
+syntax = "proto3";
+package cosmoslottery.lottery;
+
+option go_package = "cosmos-lottery/x/lottery/types";
+import "gogoproto/gogo.proto"; 
+import "cosmos/base/v1beta1/coin.proto"; 
+
+message LotteryTransaction {
+  uint64 id = 1;
+  cosmos.base.v1beta1.Coin bet = 2 [(gogoproto.nullable) = false]; 
+  
+}

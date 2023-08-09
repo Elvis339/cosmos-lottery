@@ -7,6 +7,7 @@ import "google/api/annotations.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "cosmoslottery/lottery/params.proto";
 import "cosmoslottery/lottery/active_lottery.proto";
+import "cosmoslottery/lottery/lottery_transaction.proto";
 
 option go_package = "cosmos-lottery/x/lottery/types";
 
@@ -24,6 +25,16 @@ service Query {
     option (google.api.http).get = "/cosmos-lottery/lottery/active_lottery";
   
   }
+  
+  // Queries a list of LotteryTransaction items.
+  rpc LotteryTransaction    (QueryGetLotteryTransactionRequest) returns (QueryGetLotteryTransactionResponse) {
+    option (google.api.http).get = "/cosmos-lottery/lottery/lottery_transaction/{id}";
+  
+  }
+  rpc LotteryTransactionAll (QueryAllLotteryTransactionRequest) returns (QueryAllLotteryTransactionResponse) {
+    option (google.api.http).get = "/cosmos-lottery/lottery/lottery_transaction";
+  
+  }
 }
 // QueryParamsRequest is request type for the Query/Params RPC method.
 message QueryParamsRequest {}
@@ -39,5 +50,22 @@ message QueryGetActiveLotteryRequest {}
 
 message QueryGetActiveLotteryResponse {
   ActiveLottery ActiveLottery = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryGetLotteryTransactionRequest {
+  uint64 id = 1;
+}
+
+message QueryGetLotteryTransactionResponse {
+  LotteryTransaction LotteryTransaction = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryAllLotteryTransactionRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryAllLotteryTransactionResponse {
+  repeated LotteryTransaction                     LotteryTransaction = 1 [(gogoproto.nullable) = false];
+           cosmos.base.query.v1beta1.PageResponse pagination         = 2;
 }
 

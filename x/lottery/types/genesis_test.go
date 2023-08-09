@@ -25,9 +25,44 @@ func TestGenesisState_Validate(t *testing.T) {
 				ActiveLottery: &types.ActiveLottery{
 					LotteryId: 10,
 				},
+				LotteryTransactionList: []types.LotteryTransaction{
+					{
+						Id: 0,
+					},
+					{
+						Id: 1,
+					},
+				},
+				LotteryTransactionCount: 2,
 				// this line is used by starport scaffolding # types/genesis/validField
 			},
 			valid: true,
+		},
+		{
+			desc: "duplicated lotteryTransaction",
+			genState: &types.GenesisState{
+				LotteryTransactionList: []types.LotteryTransaction{
+					{
+						Id: 0,
+					},
+					{
+						Id: 0,
+					},
+				},
+			},
+			valid: false,
+		},
+		{
+			desc: "invalid lotteryTransaction count",
+			genState: &types.GenesisState{
+				LotteryTransactionList: []types.LotteryTransaction{
+					{
+						Id: 1,
+					},
+				},
+				LotteryTransactionCount: 0,
+			},
+			valid: false,
 		},
 		// this line is used by starport scaffolding # types/genesis/testcase
 	}
