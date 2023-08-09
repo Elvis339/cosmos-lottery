@@ -22,45 +22,43 @@ func TestGenesisState_Validate(t *testing.T) {
 			desc: "valid genesis state",
 			genState: &types.GenesisState{
 
-				ActiveLottery: &types.ActiveLottery{
-					LotteryId: 10,
+				ActiveLottery: types.ActiveLottery{
+					LotteryId: 2,
 				},
-				LotteryTransactionList: []types.LotteryTransaction{
+				LotteryList: []types.Lottery{
 					{
-						Id: 0,
+						Index: "1",
 					},
 					{
-						Id: 1,
+						Index: "2",
 					},
 				},
-				LotteryTransactionCount: 2,
 				// this line is used by starport scaffolding # types/genesis/validField
 			},
 			valid: true,
 		},
 		{
-			desc: "duplicated lotteryTransaction",
+			desc: "duplicated lottery",
 			genState: &types.GenesisState{
-				LotteryTransactionList: []types.LotteryTransaction{
+				LotteryList: []types.Lottery{
 					{
-						Id: 0,
+						Index: "0",
 					},
 					{
-						Id: 0,
+						Index: "0",
 					},
 				},
 			},
 			valid: false,
 		},
 		{
-			desc: "invalid lotteryTransaction count",
+			desc: "should not have higher id then active",
 			genState: &types.GenesisState{
-				LotteryTransactionList: []types.LotteryTransaction{
-					{
-						Id: 1,
-					},
+
+				ActiveLottery: types.ActiveLottery{
+					LotteryId: 1,
 				},
-				LotteryTransactionCount: 0,
+				LotteryList: []types.Lottery{{Index: "1"}, {Index: "2"}},
 			},
 			valid: false,
 		},

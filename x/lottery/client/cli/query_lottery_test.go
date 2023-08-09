@@ -2,6 +2,7 @@ package cli_test
 
 import (
 	"fmt"
+	"strconv"
 	"testing"
 
 	tmcli "github.com/cometbft/cometbft/libs/cli"
@@ -17,17 +18,16 @@ import (
 	"cosmos-lottery/x/lottery/types"
 )
 
-func networkWithLotteryTransactionObjects(t *testing.T, n int) (*network.Network, []types.Lottery) {
+// Prevent strconv unused error
+var _ = strconv.IntSize
+
+func networkWithLotteryObjects(t *testing.T, n int) (*network.Network, []types.Lottery) {
 	t.Helper()
 	cfg := network.DefaultConfig()
 	state := types.GenesisState{}
-
 	for i := 0; i < n; i++ {
 		lottery := types.Lottery{
-			Index:               "1",
-			Fee:                 types.Fee,
-			Pool:                types.Pool,
-			LotteryTransactions: nil,
+			Index: strconv.Itoa(i),
 		}
 		nullify.Fill(&lottery)
 		state.LotteryList = append(state.LotteryList, lottery)
@@ -38,58 +38,63 @@ func networkWithLotteryTransactionObjects(t *testing.T, n int) (*network.Network
 	return network.New(t, cfg), state.LotteryList
 }
 
-func TestShowLotteryTransaction(t *testing.T) {
-	net, objs := networkWithLotteryTransactionObjects(t, 2)
+func TestShowLottery(t *testing.T) {
+	net, objs := networkWithLotteryObjects(t, 2)
 
 	ctx := net.Validators[0].ClientCtx
 	common := []string{
 		fmt.Sprintf("--%s=json", tmcli.OutputFlag),
 	}
 	tests := []struct {
-		desc string
-		id   string
+		desc    string
+		idIndex string
+
 		args []string
 		err  error
-		obj  types.LotteryTransaction
+		obj  types.Lottery
 	}{
 		{
-			desc: "found",
-			id:   fmt.Sprintf("%d", objs[0].Index),
+			desc:    "found",
+			idIndex: objs[0].Index,
+
 			args: common,
 			obj:  objs[0],
 		},
 		{
-			desc: "not found",
-			id:   "not_found",
+			desc:    "not found",
+			idIndex: strconv.Itoa(100000),
+
 			args: common,
 			err:  status.Error(codes.NotFound, "not found"),
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.desc, func(t *testing.T) {
-			args := []string{tc.id}
+			args := []string{
+				tc.idIndex,
+			}
 			args = append(args, tc.args...)
-			out, err := clitestutil.ExecTestCLICmd(ctx, cli.CmdShowLotteryTransaction(), args)
+			out, err := clitestutil.ExecTestCLICmd(ctx, cli.CmdShowLottery(), args)
 			if tc.err != nil {
 				stat, ok := status.FromError(tc.err)
 				require.True(t, ok)
 				require.ErrorIs(t, stat.Err(), tc.err)
 			} else {
 				require.NoError(t, err)
-				var resp types.QueryGetLotteryTransactionResponse
+				var resp types.QueryGetLotteryResponse
 				require.NoError(t, net.Config.Codec.UnmarshalJSON(out.Bytes(), &resp))
-				require.NotNil(t, resp.LotteryTransaction)
+				require.NotNil(t, resp.Lottery)
 				require.Equal(t,
 					nullify.Fill(&tc.obj),
-					nullify.Fill(&resp.LotteryTransaction),
+					nullify.Fill(&resp.Lottery),
 				)
 			}
 		})
 	}
 }
 
-func TestListLotteryTransaction(t *testing.T) {
-	net, objs := networkWithLotteryTransactionObjects(t, 5)
+func TestListLottery(t *testing.T) {
+	net, objs := networkWithLotteryObjects(t, 5)
 
 	ctx := net.Validators[0].ClientCtx
 	request := func(next []byte, offset, limit uint64, total bool) []string {
@@ -111,14 +116,14 @@ func TestListLotteryTransaction(t *testing.T) {
 		step := 2
 		for i := 0; i < len(objs); i += step {
 			args := request(nil, uint64(i), uint64(step), false)
-			out, err := clitestutil.ExecTestCLICmd(ctx, cli.CmdListLotteryTransaction(), args)
+			out, err := clitestutil.ExecTestCLICmd(ctx, cli.CmdListLottery(), args)
 			require.NoError(t, err)
-			var resp types.QueryAllLotteryTransactionResponse
+			var resp types.QueryAllLotteryResponse
 			require.NoError(t, net.Config.Codec.UnmarshalJSON(out.Bytes(), &resp))
-			require.LessOrEqual(t, len(resp.LotteryTransaction), step)
+			require.LessOrEqual(t, len(resp.Lottery), step)
 			require.Subset(t,
 				nullify.Fill(objs),
-				nullify.Fill(resp.LotteryTransaction),
+				nullify.Fill(resp.Lottery),
 			)
 		}
 	})
@@ -127,29 +132,29 @@ func TestListLotteryTransaction(t *testing.T) {
 		var next []byte
 		for i := 0; i < len(objs); i += step {
 			args := request(next, 0, uint64(step), false)
-			out, err := clitestutil.ExecTestCLICmd(ctx, cli.CmdListLotteryTransaction(), args)
+			out, err := clitestutil.ExecTestCLICmd(ctx, cli.CmdListLottery(), args)
 			require.NoError(t, err)
-			var resp types.QueryAllLotteryTransactionResponse
+			var resp types.QueryAllLotteryResponse
 			require.NoError(t, net.Config.Codec.UnmarshalJSON(out.Bytes(), &resp))
-			require.LessOrEqual(t, len(resp.LotteryTransaction), step)
+			require.LessOrEqual(t, len(resp.Lottery), step)
 			require.Subset(t,
 				nullify.Fill(objs),
-				nullify.Fill(resp.LotteryTransaction),
+				nullify.Fill(resp.Lottery),
 			)
 			next = resp.Pagination.NextKey
 		}
 	})
 	t.Run("Total", func(t *testing.T) {
 		args := request(nil, 0, uint64(len(objs)), true)
-		out, err := clitestutil.ExecTestCLICmd(ctx, cli.CmdListLotteryTransaction(), args)
+		out, err := clitestutil.ExecTestCLICmd(ctx, cli.CmdListLottery(), args)
 		require.NoError(t, err)
-		var resp types.QueryAllLotteryTransactionResponse
+		var resp types.QueryAllLotteryResponse
 		require.NoError(t, net.Config.Codec.UnmarshalJSON(out.Bytes(), &resp))
 		require.NoError(t, err)
 		require.Equal(t, len(objs), int(resp.Pagination.Total))
 		require.ElementsMatch(t,
 			nullify.Fill(objs),
-			nullify.Fill(resp.LotteryTransaction),
+			nullify.Fill(resp.Lottery),
 		)
 	})
 }

@@ -14,18 +14,17 @@ func TestGenesis(t *testing.T) {
 	genesisState := types.GenesisState{
 		Params: types.DefaultParams(),
 
-		ActiveLottery: &types.ActiveLottery{
-			LotteryId: 65,
+		ActiveLottery: types.ActiveLottery{
+			LotteryId: 2,
 		},
-		LotteryTransactionList: []types.LotteryTransaction{
+		LotteryList: []types.Lottery{
 			{
-				Id: 0,
+				Index: "1",
 			},
 			{
-				Id: 1,
+				Index: "2",
 			},
 		},
-		LotteryTransactionCount: 2,
 		// this line is used by starport scaffolding # genesis/test/state
 	}
 
@@ -38,7 +37,6 @@ func TestGenesis(t *testing.T) {
 	nullify.Fill(got)
 
 	require.Equal(t, genesisState.ActiveLottery, got.ActiveLottery)
-	require.ElementsMatch(t, genesisState.LotteryTransactionList, got.LotteryTransactionList)
-	require.Equal(t, genesisState.LotteryTransactionCount, got.LotteryTransactionCount)
+	require.ElementsMatch(t, genesisState.LotteryList, got.LotteryList)
 	// this line is used by starport scaffolding # genesis/test/assert
 }

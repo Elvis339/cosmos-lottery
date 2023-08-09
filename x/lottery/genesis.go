@@ -8,19 +8,14 @@ import (
 
 // InitGenesis initializes the module's state from a provided genesis state.
 func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) {
-	// Set if defined
-	if genState.ActiveLottery != nil {
-		k.SetActiveLottery(ctx, *genState.ActiveLottery)
-	}
-	// Set all the lotteryTransaction
-	for _, elem := range genState.LotteryTransactionList {
-		k.SetLotteryTransaction(ctx, elem)
-	}
-
-	// Set lotteryTransaction count
-	k.SetLotteryTransactionCount(ctx, genState.LotteryTransactionCount)
-	// this line is used by starport scaffolding # genesis/module/init
 	k.SetParams(ctx, genState.Params)
+	k.SetActiveLottery(ctx, genState.ActiveLottery)
+
+	// Set all the lottery
+	for _, elem := range genState.LotteryList {
+		k.SetLottery(ctx, elem)
+	}
+	// this line is used by starport scaffolding # genesis/module/init
 }
 
 // ExportGenesis returns the module's exported genesis
@@ -31,10 +26,9 @@ func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 	// Get all activeLottery
 	activeLottery, found := k.GetActiveLottery(ctx)
 	if found {
-		genesis.ActiveLottery = &activeLottery
+		genesis.ActiveLottery = activeLottery
 	}
-	genesis.LotteryTransactionList = k.GetAllLotteryTransaction(ctx)
-	genesis.LotteryTransactionCount = k.GetLotteryTransactionCount(ctx)
+	genesis.LotteryList = k.GetAllLottery(ctx)
 	// this line is used by starport scaffolding # genesis/module/export
 
 	return genesis
