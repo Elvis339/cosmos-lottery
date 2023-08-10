@@ -1,6 +1,8 @@
 package keeper_test
 
 import (
+	"cosmos-lottery/testutil/sample"
+	"cosmos-lottery/x/lottery"
 	"strconv"
 	"testing"
 
@@ -60,4 +62,66 @@ func TestLotteryGetAll(t *testing.T) {
 		nullify.Fill(items),
 		nullify.Fill(keeper.GetAllLottery(ctx)),
 	)
+}
+func TestUpdateLottery(t *testing.T) {
+	tests := []struct {
+		desc       string
+		index      string
+		lotteryTxs []types.LotteryTransaction
+		pool       uint64
+		valid      bool
+	}{
+		{
+			desc:       "should error if lottery does not exist",
+			index:      "10",
+			lotteryTxs: make([]types.LotteryTransaction, 0),
+			pool:       0,
+			valid:      false,
+		},
+		{
+			desc:  "should update lottery pool",
+			index: "1",
+			lotteryTxs: []types.LotteryTransaction{{
+				Id:        0,
+				Bet:       sdk.NewInt64Coin("token", 2),
+				CreatedBy: sample.AccAddress(),
+				LotteryId: 1,
+			}, {
+				Id:        1,
+				Bet:       sdk.NewInt64Coin("token", 6),
+				CreatedBy: sample.AccAddress(),
+				LotteryId: 1,
+			}},
+			pool:  20,
+			valid: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.desc, func(t *testing.T) {
+			k, ctx := keepertest.LotteryKeeper(t)
+			lottery.InitGenesis(ctx, *k, types.GenesisState{
+				ActiveLottery: types.ActiveLottery{
+					LotteryId: 1,
+				},
+				LotteryList: []types.Lottery{
+					{
+						Index: "1",
+						Fee:   types.Fee,
+						Pool:  types.Fee,
+					},
+				},
+			})
+
+			err := k.UpdateLotteryPool(ctx, tc.index, tc.lotteryTxs)
+			if tc.valid {
+				require.NoError(t, err)
+
+				lottery, _ := k.GetLottery(ctx, tc.index)
+				require.Equal(t, lottery.Pool.Amount.Uint64(), tc.pool)
+			} else {
+				require.Error(t, err)
+			}
+		})
+	}
 }

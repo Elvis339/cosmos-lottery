@@ -19,7 +19,8 @@ type (
 		memKey     storetypes.StoreKey
 		paramstore paramtypes.Subspace
 
-		bankKeeper types.BankKeeper
+		bankKeeper    types.BankKeeper
+		lotteryTxMeta LotteryTransactionMetadata
 	}
 )
 
@@ -42,7 +43,8 @@ func NewKeeper(
 		memKey:     memKey,
 		paramstore: ps,
 
-		bankKeeper: bankKeeper,
+		bankKeeper:    bankKeeper,
+		lotteryTxMeta: NewLotteryTransactionMetadata(),
 	}
 }
 

@@ -7,6 +7,7 @@ import "cosmos/base/v1beta1/coin.proto";
 
 message LotteryTransaction {
   uint64 id = 1;
-  cosmos.base.v1beta1.Coin bet = 2 [(gogoproto.nullable) = false]; 
-  
+  cosmos.base.v1beta1.Coin bet = 2 [(gogoproto.nullable) = false];
+  string createdBy = 3;
+  uint64 lotteryId = 4;
 }

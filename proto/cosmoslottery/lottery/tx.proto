@@ -1,7 +1,17 @@
 syntax = "proto3";
+
 package cosmoslottery.lottery;
 
 option go_package = "cosmos-lottery/x/lottery/types";
 
 // Msg defines the Msg service.
-service Msg {}
+service Msg {
+  rpc PlaceBet (MsgPlaceBet) returns (MsgPlaceBetResponse);
+}
+message MsgPlaceBet {
+  string creator = 1;
+  uint64 bet     = 2;
+}
+
+message MsgPlaceBetResponse {}
+

@@ -35212,6 +35212,11 @@ paths:
                         custom method
 
                         signatures required by gogoproto.
+                    createdBy:
+                      type: string
+                    lotteryId:
+                      type: string
+                      format: uint64
               pagination:
                 type: object
                 properties:
@@ -35348,6 +35353,11 @@ paths:
                       custom method
 
                       signatures required by gogoproto.
+                  createdBy:
+                    type: string
+                  lotteryId:
+                    type: string
+                    format: uint64
         default:
           description: An unexpected error response.
           schema:
@@ -71071,6 +71081,13 @@ definitions:
 
           NOTE: The amount field is an Int which implements the custom method
           signatures required by gogoproto.
+      createdBy:
+        type: string
+      lotteryId:
+        type: string
+        format: uint64
+  cosmoslottery.lottery.MsgPlaceBetResponse:
+    type: object
   cosmoslottery.lottery.Params:
     type: object
     description: Params defines the parameters for the module.
@@ -71166,6 +71183,11 @@ definitions:
                 method
 
                 signatures required by gogoproto.
+            createdBy:
+              type: string
+            lotteryId:
+              type: string
+              format: uint64
       pagination:
         type: object
         properties:
@@ -71263,6 +71285,11 @@ definitions:
               method
 
               signatures required by gogoproto.
+          createdBy:
+            type: string
+          lotteryId:
+            type: string
+            format: uint64
   cosmoslottery.lottery.QueryParamsResponse:
     type: object
     properties:

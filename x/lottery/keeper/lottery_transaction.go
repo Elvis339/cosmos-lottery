@@ -1,9 +1,8 @@
 package keeper
 
 import (
-	"encoding/binary"
-
 	"cosmos-lottery/x/lottery/types"
+	"encoding/binary"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -32,23 +31,44 @@ func (k Keeper) SetLotteryTransactionCount(ctx sdk.Context, count uint64) {
 	store.Set(byteKey, bz)
 }
 
-// AppendLotteryTransaction appends a lotteryTransaction in the store with a new id and update the count
+/*
+AppendLotteryTransaction
+On a new bet:
+1. Check if the user's address exists in the in-memory map (lotteryTxMeta).
+2. If the user's address is NOT present:
+  - Add the user's address to the hash map.
+  - Increment the transaction count.
+
+3. If the user's address IS present:
+  - Update existing transaction bet with the new bet details retaining same insertion order.
+  - Maintain the same transaction ID.
+*/
 func (k Keeper) AppendLotteryTransaction(
 	ctx sdk.Context,
 	lotteryTransaction types.LotteryTransaction,
 ) uint64 {
-	// Create the lotteryTransaction
-	count := k.GetLotteryTransactionCount(ctx)
-
-	// Set the ID of the appended value
-	lotteryTransaction.Id = count
-
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.LotteryTransactionKey))
-	appendedValue := k.cdc.MustMarshal(&lotteryTransaction)
-	store.Set(GetLotteryTransactionIDBytes(lotteryTransaction.Id), appendedValue)
+	ltryTx := lotteryTransaction
 
-	// Update lotteryTransaction count
-	k.SetLotteryTransactionCount(ctx, count+1)
+	count := k.GetLotteryTransactionCount(ctx)
+	id, found := k.lotteryTxMeta.Get(lotteryTransaction.GetCreatedBy())
+
+	if found {
+		lotteryTx, exist := k.GetLotteryTransaction(ctx, id)
+		if exist {
+			lotteryTx.Bet = ltryTx.Bet
+		}
+		ltryTx = lotteryTx
+	} else {
+		k.lotteryTxMeta.Set(lotteryTransaction.GetCreatedBy(), count)
+		ltryTx.Id = count
+
+		// Update lotteryTransaction count
+		k.SetLotteryTransactionCount(ctx, count+1)
+	}
+
+	appendedValue := k.cdc.MustMarshal(&ltryTx)
+	store.Set(GetLotteryTransactionIDBytes(ltryTx.Id), appendedValue)
 
 	return count
 }

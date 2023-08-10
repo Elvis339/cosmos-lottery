@@ -10,8 +10,12 @@ import (
 const DefaultIndex uint64 = 1
 
 var (
-	Fee  = sdk.NewInt64Coin("token", 1)
+	Fee  = sdk.NewInt64Coin("token", 5)
 	Pool = sdk.NewInt64Coin("token", 0)
+
+	MinBet = sdk.NewInt64Coin("token", 1)
+
+	MaxBet = sdk.NewInt64Coin("token", 100)
 )
 
 // DefaultGenesis returns the default genesis state
@@ -20,10 +24,9 @@ func DefaultGenesis() *GenesisState {
 		ActiveLottery: ActiveLottery{LotteryId: DefaultIndex},
 		LotteryList: []Lottery{
 			{
-				Index:               strconv.FormatUint(DefaultIndex, 10),
-				Fee:                 Fee,
-				Pool:                Pool,
-				LotteryTransactions: nil,
+				Index: strconv.FormatUint(DefaultIndex, 10),
+				Fee:   Fee,
+				Pool:  Pool,
 			},
 		},
 		// this line is used by starport scaffolding # genesis/types/default

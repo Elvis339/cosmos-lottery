@@ -2,8 +2,10 @@ package keeper
 
 import (
 	"cosmos-lottery/x/lottery/types"
+	"fmt"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 // SetLottery set a specific lottery in the store from its index
@@ -60,4 +62,22 @@ func (k Keeper) GetAllLottery(ctx sdk.Context) (list []types.Lottery) {
 	}
 
 	return
+}
+
+// UpdateLotteryPool sum LotteryTransaction with Fee and MinBet
+func (k Keeper) UpdateLotteryPool(ctx sdk.Context, index string, lotteryTxs []types.LotteryTransaction) error {
+	lottery, found := k.GetLottery(ctx, index)
+
+	if !found {
+		return sdkerrors.ErrNotFound.Wrapf(fmt.Sprintf("lottery with index %s", index))
+	}
+
+	sum := sdk.NewInt64Coin("token", 0)
+	for _, lotteryTx := range lotteryTxs {
+		sum = sum.Add(lotteryTx.Bet).Add(types.Fee).Add(types.MinBet)
+	}
+	lottery.Pool = sum
+	k.SetLottery(ctx, lottery)
+
+	return nil
 }

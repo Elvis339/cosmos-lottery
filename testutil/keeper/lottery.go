@@ -1,8 +1,6 @@
 package keeper
 
 import (
-	"testing"
-
 	"cosmos-lottery/x/lottery/keeper"
 	"cosmos-lottery/x/lottery/types"
 	tmdb "github.com/cometbft/cometbft-db"
@@ -15,6 +13,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	typesparams "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/stretchr/testify/require"
+	"testing"
 )
 
 func LotteryKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
@@ -41,7 +40,7 @@ func LotteryKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		storeKey,
 		memStoreKey,
 		paramsSubspace,
-		nil,
+		nil, // @TODO: Figure out to mock bankKeper so tests in msg_server_test.go can pass
 	)
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())

@@ -15,14 +15,13 @@ func TestGenesis(t *testing.T) {
 		Params: types.DefaultParams(),
 
 		ActiveLottery: types.ActiveLottery{
-			LotteryId: 2,
+			LotteryId: 1,
 		},
 		LotteryList: []types.Lottery{
 			{
 				Index: "1",
-			},
-			{
-				Index: "2",
+				Fee:   types.Fee,
+				Pool:  types.Fee,
 			},
 		},
 		// this line is used by starport scaffolding # genesis/test/state
