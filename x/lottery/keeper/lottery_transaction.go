@@ -51,7 +51,7 @@ func (k Keeper) AppendLotteryTransaction(
 	ltryTx := lotteryTransaction
 
 	count := k.GetLotteryTransactionCount(ctx)
-	id, found := k.lotteryTxMeta.Get(lotteryTransaction.GetCreatedBy())
+	found, id := k.lotteryTxMeta.GetLotteryTransactionId(lotteryTransaction.GetCreatedBy())
 
 	if found {
 		lotteryTx, exist := k.GetLotteryTransaction(ctx, id)
@@ -60,8 +60,10 @@ func (k Keeper) AppendLotteryTransaction(
 		}
 		ltryTx = lotteryTx
 	} else {
-		k.lotteryTxMeta.Set(lotteryTransaction.GetCreatedBy(), count)
 		ltryTx.Id = count
+
+		// Update meta
+		k.lotteryTxMeta.Set(lotteryTransaction)
 
 		// Update lotteryTransaction count
 		k.SetLotteryTransactionCount(ctx, count+1)
