@@ -12,6 +12,9 @@ import (
 var (
 	zero                    = sdk.NewInt64Coin("token", 0)
 	defaultSerializationKey = "0||0"
+	betSum                  = zero                    // Total sum of all the bets.
+	minBet                  = defaultSerializationKey // Encoded details of the minimum bet.
+	maxBet                  = defaultSerializationKey // Encoded details of the maximum bet.
 )
 
 /*
@@ -27,10 +30,6 @@ The disadvantage of this design are
   - Synchronisation in a distributed setup, ensuring consistency across nodes can be challenging with in-memory data.
 */
 type LotteryTransactionMetadata struct {
-	betSum sdk.Coin // Total sum of all the bets.
-	minBet string   // Encoded details of the minimum bet.
-	maxBet string   // Encoded details of the maximum bet.
-
 	// addressToBet efficiently identifies the previous placed bet by the address.
 	// It is utilized so that `betSum` reflects accurate calculations when a
 	// user updates their bet.
@@ -43,9 +42,6 @@ type LotteryTransactionMetadata struct {
 
 func NewLotteryTransactionMetadata() LotteryTransactionMetadata {
 	return LotteryTransactionMetadata{
-		betSum:               zero,
-		minBet:               defaultSerializationKey,
-		maxBet:               defaultSerializationKey,
 		addressToBet:         make(map[string]sdk.Coin),
 		addressToLotteryTxId: make(map[string]uint64),
 	}
@@ -63,8 +59,8 @@ func (m *LotteryTransactionMetadata) Set(lotteryTx types.LotteryTransaction) {
 		m.addressToLotteryTxId[address] = lotteryTx.LotteryId
 	}
 
-	m.betSum = m.betSum.Sub(currBet)
-	m.betSum = m.betSum.Add(lotteryTx.Bet)
+	betSum = betSum.Sub(currBet)
+	betSum = betSum.Add(lotteryTx.Bet)
 
 	// Upsert address to bet
 	m.addressToBet[address] = lotteryTx.Bet
@@ -73,20 +69,20 @@ func (m *LotteryTransactionMetadata) Set(lotteryTx types.LotteryTransaction) {
 	isMinBetSet, minAmount, _ := m.GetMinBet()
 
 	if !isMinBetSet == true {
-		m.minBet = m.encodeBet(lotteryTx)
+		minBet = m.encodeBet(lotteryTx)
 	} else {
 		if bet.IsLT(minAmount) {
-			m.minBet = m.encodeBet(lotteryTx)
+			minBet = m.encodeBet(lotteryTx)
 		}
 	}
 
 	isMaxBetSet, maxAmount, _ := m.GetMaxBet()
 
 	if !isMaxBetSet {
-		m.maxBet = m.encodeBet(lotteryTx)
+		maxBet = m.encodeBet(lotteryTx)
 	} else {
 		if bet.IsGTE(maxAmount) {
-			m.maxBet = m.encodeBet(lotteryTx)
+			maxBet = m.encodeBet(lotteryTx)
 		}
 	}
 }
@@ -94,9 +90,9 @@ func (m *LotteryTransactionMetadata) Set(lotteryTx types.LotteryTransaction) {
 // Prune resets the LotteryTransactionMetadata to its default state.
 // This is typically used after a lottery round concludes.
 func (m *LotteryTransactionMetadata) Prune() {
-	m.minBet = defaultSerializationKey
-	m.maxBet = defaultSerializationKey
-	m.betSum = zero
+	minBet = defaultSerializationKey
+	maxBet = defaultSerializationKey
+	betSum = zero
 	m.addressToBet = make(map[string]sdk.Coin)
 	m.addressToLotteryTxId = make(map[string]uint64)
 }
@@ -120,25 +116,21 @@ func (m *LotteryTransactionMetadata) decodeBet(serialized string) (sdk.Coin, str
 }
 
 func (m *LotteryTransactionMetadata) GetBetSum() sdk.Coin {
-	return m.betSum
+	return betSum
 }
 
 func (m *LotteryTransactionMetadata) GetMinBet() (bool, sdk.Coin, string) {
-	serialized := m.minBet
+	serialized := minBet
 	amount, address := m.decodeBet(serialized)
 
-	fmt.Println("GET_MIN_BET = amount=", amount)
-	fmt.Println("GET_MIN_BET address=", address)
-
 	if amount.IsEqual(zero) && address == "0" {
-		fmt.Println("GET_MIN_BET returning = false, zero, 0", amount)
 		return false, zero, "0"
 	}
 
 	return true, amount, address
 }
 func (m *LotteryTransactionMetadata) GetMaxBet() (bool, sdk.Coin, string) {
-	serialized := m.maxBet
+	serialized := maxBet
 	amount, address := m.decodeBet(serialized)
 
 	if amount.IsEqual(zero) && address == "0" {
