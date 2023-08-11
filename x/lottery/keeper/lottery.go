@@ -1,11 +1,13 @@
 package keeper
 
 import (
+	"context"
 	"cosmos-lottery/x/lottery/types"
 	"fmt"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"strconv"
 )
 
 // SetLottery set a specific lottery in the store from its index
@@ -65,19 +67,92 @@ func (k Keeper) GetAllLottery(ctx sdk.Context) (list []types.Lottery) {
 }
 
 // UpdateLotteryPool sum LotteryTransaction with Fee and MinBet
-func (k Keeper) UpdateLotteryPool(ctx sdk.Context, index string, lotteryTxs []types.LotteryTransaction) error {
+func (k Keeper) UpdateLotteryPool(ctx sdk.Context, index string, amount sdk.Coin) error {
 	lottery, found := k.GetLottery(ctx, index)
 
 	if !found {
 		return sdkerrors.ErrNotFound.Wrapf(fmt.Sprintf("lottery with index %s", index))
 	}
 
-	sum := sdk.NewInt64Coin("token", 0)
-	for _, lotteryTx := range lotteryTxs {
-		sum = sum.Add(lotteryTx.Bet).Add(types.Fee).Add(types.MinBet)
-	}
-	lottery.Pool = sum
+	newAmount := lottery.Pool.Add(amount)
+	lottery.Pool = newAmount
+
 	k.SetLottery(ctx, lottery)
+
+	return nil
+}
+
+func (k Keeper) LotteryEndBlock(goCtx context.Context, winner sdk.AccAddress) error {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	lotteryTransactionCount := k.GetLotteryTransactionCount(ctx)
+
+	// Early exit if we have less than 10 lottery tx in the block
+	if lotteryTransactionCount < 10 {
+		return nil
+	}
+
+	currentLotteryId, found := k.GetActiveLottery(ctx)
+	if !found {
+		panic("active lottery is not set!")
+	}
+
+	lottery, found := k.GetLottery(ctx, strconv.FormatUint(currentLotteryId.LotteryId, 10))
+	if !found {
+		panic(fmt.Sprintf("lottery %d does not exist", currentLotteryId.LotteryId))
+	}
+
+	var nextLottery types.Lottery
+
+	highestBetFound, _, highestBetAddress := k.lotteryTxMeta.GetMaxBet()
+	lowestBetFound, _, lowestBetAddress := k.lotteryTxMeta.GetMinBet()
+
+	fmt.Println("meta=", k.lotteryTxMeta)
+	fmt.Printf("lowest bet found=%t\n", lowestBetFound)
+	fmt.Printf("winner.String()=%s\n", winner.String())
+	fmt.Printf("lowestBetAddress=%s\n", lowestBetAddress)
+	// If winner placed the lowest bet, no payment is issued, current lottery pool is carried over
+	if lowestBetFound == true && winner.String() == lowestBetAddress {
+		nextLottery.Pool = lottery.Pool
+		fmt.Println("I'm the lowest")
+	} else {
+		fmt.Println("I'm not the lowest")
+		nextLottery.Pool = types.Pool
+
+		//var paymentAmount sdk.Coin
+
+		// If the winner placed the highest bet, the entire pool is paid to the winner
+		if highestBetFound == true && winner.String() == highestBetAddress {
+			//paymentAmount = lottery.Pool
+			fmt.Printf("winner placed the highest bet set payment amount to=%d", lottery.Pool.Amount.Uint64())
+		} else {
+			// Winner did not place highest or lowest bet, the winner is paid the sum of all bets (without fees)
+			//paymentAmount = k.lotteryTxMeta.GetBetSum()
+			fmt.Printf("Random winner sending %d", k.lotteryTxMeta.GetBetSum().Amount.Uint64())
+		}
+
+		// Issue payment
+		//err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, winner, sdk.Coins{paymentAmount})
+		//if err != nil {
+		//}
+	}
+
+	// Prune in-memory data structure
+	k.lotteryTxMeta.Prune()
+
+	// Remove prev lotteries
+	k.PruneLotteryTransactions(ctx)
+
+	// Reset counter
+	k.SetLotteryTransactionCount(ctx, 0)
+
+	nextLotteryId := k.IncrementActiveLottery(ctx)
+	// next active lottery id
+
+	// set new lottery with the new incremented active lottery
+	nextLottery.Index = strconv.FormatUint(nextLotteryId, 10)
+	nextLottery.Fee = types.Fee
+	k.SetLottery(ctx, nextLottery)
 
 	return nil
 }

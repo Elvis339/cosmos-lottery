@@ -2,7 +2,6 @@ package keeper_test
 
 import (
 	"cosmos-lottery/testutil/sample"
-	"cosmos-lottery/x/lottery"
 	"strconv"
 	"testing"
 
@@ -10,6 +9,7 @@ import (
 	"cosmos-lottery/testutil/nullify"
 	"cosmos-lottery/x/lottery/keeper"
 	"cosmos-lottery/x/lottery/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 )
@@ -63,65 +63,91 @@ func TestLotteryGetAll(t *testing.T) {
 		nullify.Fill(keeper.GetAllLottery(ctx)),
 	)
 }
-func TestUpdateLottery(t *testing.T) {
-	tests := []struct {
-		desc       string
-		index      string
-		lotteryTxs []types.LotteryTransaction
-		pool       uint64
-		valid      bool
-	}{
-		{
-			desc:       "should error if lottery does not exist",
-			index:      "10",
-			lotteryTxs: make([]types.LotteryTransaction, 0),
-			pool:       0,
-			valid:      false,
-		},
-		{
-			desc:  "should update lottery pool",
-			index: "1",
-			lotteryTxs: []types.LotteryTransaction{{
-				Id:        0,
-				Bet:       sdk.NewInt64Coin("token", 2),
-				CreatedBy: sample.AccAddress(),
-				LotteryId: 1,
-			}, {
-				Id:        1,
-				Bet:       sdk.NewInt64Coin("token", 6),
-				CreatedBy: sample.AccAddress(),
-				LotteryId: 1,
-			}},
-			pool:  20,
-			valid: true,
-		},
+
+func TestLottery_UpdatePool(t *testing.T) {
+	keeper, ctx := keepertest.SetupLotteryKeeperWithGenesis(t)
+	coins := sdk.Coins{
+		sdk.NewInt64Coin("token", 10),
+		sdk.NewInt64Coin("token", 10),
 	}
 
-	for _, tc := range tests {
-		t.Run(tc.desc, func(t *testing.T) {
-			k, ctx := keepertest.LotteryKeeper(t)
-			lottery.InitGenesis(ctx, *k, types.GenesisState{
-				ActiveLottery: types.ActiveLottery{
-					LotteryId: 1,
-				},
-				LotteryList: []types.Lottery{
-					{
-						Index: "1",
-						Fee:   types.Fee,
-						Pool:  types.Fee,
-					},
-				},
-			})
-
-			err := k.UpdateLotteryPool(ctx, tc.index, tc.lotteryTxs)
-			if tc.valid {
-				require.NoError(t, err)
-
-				lottery, _ := k.GetLottery(ctx, tc.index)
-				require.Equal(t, lottery.Pool.Amount.Uint64(), tc.pool)
-			} else {
-				require.Error(t, err)
-			}
-		})
+	for _, coin := range coins {
+		err := keeper.UpdateLotteryPool(ctx, "1", coin)
+		require.NoError(t, err)
 	}
+
+	// Index "2" does not exist
+	err := keeper.UpdateLotteryPool(ctx, "2", sdk.NewInt64Coin("token", 10))
+	require.Error(t, err)
+
+	currentLottery, _ := keeper.GetLottery(ctx, "1")
+	require.Equal(t, uint64(20), currentLottery.Pool.Amount.Uint64())
 }
+
+func TestLotteryEndBlock_NotEnoughTx(t *testing.T) {
+	k, ctx := keepertest.SetupLotteryKeeperWithGenesis(t)
+
+	createNLotteryTransaction(k, ctx, 9)
+
+	addr, _ := sdk.AccAddressFromBech32(sample.AccAddress())
+
+	err := k.LotteryEndBlock(ctx, addr)
+	require.NoError(t, err)
+
+	require.Equal(t, uint64(9), k.GetLotteryTransactionCount(ctx))
+
+	currentLotteryId, found := k.GetActiveLottery(ctx)
+	require.True(t, found)
+
+	// current lottery id should not be changed because there weren't enough transactions
+	require.Equal(t, uint64(1), currentLotteryId.LotteryId)
+}
+
+func TestLotteryEndBlock_LowestBetWinner(t *testing.T) {
+	k, ctx := keepertest.SetupLotteryKeeperWithGenesis(t)
+	lotteryTx := make([]types.LotteryTransaction, 10)
+	bets := [10]int{33, 71, 54, 31, 11, 99, 76, 4, 65, 82}
+	alice, _ := sdk.AccAddressFromBech32(sample.AccAddress())
+
+	currentLotteryId, found := k.GetActiveLottery(ctx)
+	require.True(t, found)
+
+	lottery, found := k.GetLottery(ctx, strconv.FormatUint(currentLotteryId.LotteryId, 10))
+	require.True(t, found)
+	require.Equal(t, strconv.FormatUint(currentLotteryId.LotteryId, 10), lottery.Index)
+
+	for i := range lotteryTx {
+		if bets[i] == 11 {
+			lotteryTx[i].CreatedBy = alice.String()
+		} else {
+			lotteryTx[i].CreatedBy = sample.AccAddress()
+		}
+
+		lotteryTx[i].Bet = sdk.NewInt64Coin("token", int64(bets[i]))
+		lotteryTx[i].Id = k.AppendLotteryTransaction(ctx, lotteryTx[i])
+	}
+
+	err := k.LotteryEndBlock(ctx, alice)
+	require.NoError(t, err)
+
+	// Verify LotteryTransactionCounter has been set to 0
+	k.SetLotteryTransactionCount(ctx, 0)
+	require.Equal(t, uint64(0), k.GetLotteryTransactionCount(ctx))
+	require.Equal(t, 0, len(k.GetAllLotteryTransaction(ctx)))
+
+	// Verify active lottery has been incremented
+	next, found := k.GetActiveLottery(ctx)
+	require.True(t, found)
+
+	nextLottery, found := k.GetLottery(ctx, strconv.FormatUint(next.LotteryId, 10))
+	require.True(t, found)
+	require.Equal(t, strconv.FormatUint(next.LotteryId, 10), nextLottery.Index)
+
+	// Since the winner placed the lowest bet
+	// verify nextLottery.Pool is equal to the previous
+	require.Equal(t, lottery.Pool.Amount.Uint64(), nextLottery.Pool.Amount.Uint64())
+}
+
+func TestLotteryEndBlock_HighestBetWinner(t *testing.T) {}
+
+func TestLotteryEndBlock_Winner(t *testing.T) {}

@@ -15,7 +15,7 @@ func (k msgServer) PlaceBet(goCtx context.Context, msg *types.MsgPlaceBet) (*typ
 	// because active lottery is deterministic id generator that represents current active lottery set & is managed by the blockchain
 	activeLottery, found := k.Keeper.GetActiveLottery(ctx)
 	if !found {
-		return nil, sdkerrors.ErrNotFound.Wrapf("active lottery is not set")
+		panic("active lottery is not set!")
 	}
 
 	addr, err := sdk.AccAddressFromBech32(msg.GetCreator())
@@ -43,10 +43,8 @@ func (k msgServer) PlaceBet(goCtx context.Context, msg *types.MsgPlaceBet) (*typ
 		LotteryId: activeLottery.LotteryId,
 	})
 
-	lotteryTxs := k.GetAllLotteryTransaction(ctx)
-
 	// Update lottery pool
-	err = k.UpdateLotteryPool(ctx, strconv.FormatUint(activeLottery.LotteryId, 10), lotteryTxs)
+	err = k.UpdateLotteryPool(ctx, strconv.FormatUint(activeLottery.LotteryId, 10), amount)
 	if err != nil {
 		return nil, err
 	}

@@ -12,27 +12,39 @@ import (
 	"cosmos-lottery/x/lottery/types"
 )
 
-func createTestActiveLottery(keeper *keeper.Keeper, ctx sdk.Context) types.ActiveLottery {
-	item := types.ActiveLottery{}
+func createTestActiveLottery(keeper *keeper.Keeper, ctx sdk.Context, id uint64) types.ActiveLottery {
+	item := types.ActiveLottery{
+		LotteryId: id,
+	}
 	keeper.SetActiveLottery(ctx, item)
 	return item
 }
 
 func TestActiveLotteryGet(t *testing.T) {
 	keeper, ctx := keepertest.LotteryKeeper(t)
-	item := createTestActiveLottery(keeper, ctx)
+	item := createTestActiveLottery(keeper, ctx, 1)
 	rst, found := keeper.GetActiveLottery(ctx)
 	require.True(t, found)
 	require.Equal(t,
 		nullify.Fill(&item),
 		nullify.Fill(&rst),
 	)
+	require.Equal(t, 1, rst.LotteryId)
 }
 
 func TestActiveLotteryRemove(t *testing.T) {
 	keeper, ctx := keepertest.LotteryKeeper(t)
-	createTestActiveLottery(keeper, ctx)
+	createTestActiveLottery(keeper, ctx, 1)
 	keeper.RemoveActiveLottery(ctx)
 	_, found := keeper.GetActiveLottery(ctx)
 	require.False(t, found)
+}
+
+func TestActiveLottery_Increment(t *testing.T) {
+	keeper, ctx := keepertest.LotteryKeeper(t)
+	createTestActiveLottery(keeper, ctx, 1)
+	keeper.IncrementActiveLottery(ctx)
+	rst, found := keeper.GetActiveLottery(ctx)
+	require.True(t, found)
+	require.Equal(t, uint64(2), rst.LotteryId)
 }

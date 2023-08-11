@@ -3,9 +3,10 @@ package keeper
 import (
 	"cosmos-lottery/x/lottery/types"
 	"fmt"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"strconv"
 	"strings"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 var (
@@ -71,7 +72,7 @@ func (m *LotteryTransactionMetadata) Set(lotteryTx types.LotteryTransaction) {
 	bet := lotteryTx.Bet
 	isMinBetSet, minAmount, _ := m.GetMinBet()
 
-	if !isMinBetSet {
+	if !isMinBetSet == true {
 		m.minBet = m.encodeBet(lotteryTx)
 	} else {
 		if bet.IsLT(minAmount) {
@@ -126,7 +127,11 @@ func (m *LotteryTransactionMetadata) GetMinBet() (bool, sdk.Coin, string) {
 	serialized := m.minBet
 	amount, address := m.decodeBet(serialized)
 
+	fmt.Println("GET_MIN_BET = amount=", amount)
+	fmt.Println("GET_MIN_BET address=", address)
+
 	if amount.IsEqual(zero) && address == "0" {
+		fmt.Println("GET_MIN_BET returning = false, zero, 0", amount)
 		return false, zero, "0"
 	}
 

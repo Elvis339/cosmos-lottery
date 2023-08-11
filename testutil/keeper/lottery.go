@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"cosmos-lottery/x/lottery"
 	"cosmos-lottery/x/lottery/keeper"
 	"cosmos-lottery/x/lottery/types"
 	tmdb "github.com/cometbft/cometbft-db"
@@ -13,6 +14,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	typesparams "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/stretchr/testify/require"
+	"strconv"
 	"testing"
 )
 
@@ -47,6 +49,29 @@ func LotteryKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 
 	// Initialize params
 	k.SetParams(ctx, types.DefaultParams())
+
+	return k, ctx
+}
+
+func SetupLotteryKeeperWithGenesis(t testing.TB) (*keeper.Keeper, sdk.Context) {
+	activeLotteryId := uint64(1)
+	genesisState := types.GenesisState{
+		Params: types.DefaultParams(),
+
+		ActiveLottery: types.ActiveLottery{
+			LotteryId: activeLotteryId,
+		},
+		LotteryList: []types.Lottery{
+			{
+				Index: strconv.FormatUint(activeLotteryId, 10),
+				Fee:   types.Fee,
+				Pool:  types.Pool,
+			},
+		},
+	}
+
+	k, ctx := LotteryKeeper(t)
+	lottery.InitGenesis(ctx, *k, genesisState)
 
 	return k, ctx
 }

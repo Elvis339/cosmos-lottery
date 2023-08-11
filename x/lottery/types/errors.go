@@ -10,5 +10,5 @@ import (
 // x/lottery module sentinel errors
 var (
 	ErrMinBet = sdkerrors.Register(ModuleName, 1100, fmt.Sprintf("min. place bet is %d", MinBet.Amount.Uint64()))
-	ErrMaxBet = sdkerrors.Register(ModuleName, 1101, "")
+	ErrMaxBet = sdkerrors.Register(ModuleName, 1101, fmt.Sprintf("max. place bet is %d", MaxBet.Amount.Uint64()))
 )

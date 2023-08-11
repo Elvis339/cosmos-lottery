@@ -3,6 +3,7 @@ package keeper
 import (
 	"cosmos-lottery/x/lottery/types"
 	"encoding/binary"
+	"errors"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -125,4 +126,26 @@ func GetLotteryTransactionIDBytes(id uint64) []byte {
 // GetLotteryTransactionIDFromBytes returns ID in uint64 format from a byte array
 func GetLotteryTransactionIDFromBytes(bz []byte) uint64 {
 	return binary.BigEndian.Uint64(bz)
+}
+
+func (k Keeper) GetWinner(ctx sdk.Context) (*types.LotteryTransaction, error) {
+	all := k.GetAllLotteryTransaction(ctx)
+	hash := types.Hash(all)
+	numOfTx := len(all)
+
+	if numOfTx == 0 {
+		return nil, errors.New("no transactions in the block. Winner cannot be determined")
+	}
+
+	result := binary.LittleEndian.Uint16(hash[len(hash)-2:])
+	winnerIndex := int(result) % numOfTx
+
+	return &all[winnerIndex], nil
+}
+
+func (k Keeper) PruneLotteryTransactions(ctx sdk.Context) {
+	all := k.GetAllLotteryTransaction(ctx)
+	for _, e := range all {
+		k.RemoveLotteryTransaction(ctx, e.Id)
+	}
 }
