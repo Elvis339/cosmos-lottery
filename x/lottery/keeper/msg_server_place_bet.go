@@ -4,7 +4,6 @@ import (
 	"context"
 	"cosmos-lottery/x/lottery/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"strconv"
 )
 
@@ -15,7 +14,7 @@ func (k msgServer) PlaceBet(goCtx context.Context, msg *types.MsgPlaceBet) (*typ
 	// because active lottery is deterministic id generator that represents current active lottery set & is managed by the blockchain
 	activeLottery, found := k.Keeper.GetActiveLottery(ctx)
 	if !found {
-		return nil, sdkerrors.ErrNotFound.Wrapf("active lottery is not set")
+		panic("active lottery is not set!")
 	}
 
 	addr, err := sdk.AccAddressFromBech32(msg.GetCreator())
@@ -26,11 +25,11 @@ func (k msgServer) PlaceBet(goCtx context.Context, msg *types.MsgPlaceBet) (*typ
 	bet := sdk.NewInt64Coin("token", int64(msg.GetBet()))
 	amount := bet.Add(types.Fee).Add(types.MinBet)
 
-	balance := k.bankKeeper.GetBalance(ctx, addr, "token")
-
-	if balance.IsLT(amount) {
-		return nil, sdkerrors.ErrInsufficientFunds.Wrapf("could not place a bet")
-	}
+	//balance := k.bankKeeper.GetBalance(ctx, addr, "token")
+	//
+	//if balance.IsLT(amount) {
+	//	return nil, sdkerrors.ErrInsufficientFunds.Wrapf("could not place a bet")
+	//}
 
 	err = k.bankKeeper.SendCoinsFromAccountToModule(ctx, addr, types.ModuleName, sdk.Coins{amount})
 	if err != nil {
@@ -43,10 +42,8 @@ func (k msgServer) PlaceBet(goCtx context.Context, msg *types.MsgPlaceBet) (*typ
 		LotteryId: activeLottery.LotteryId,
 	})
 
-	lotteryTxs := k.GetAllLotteryTransaction(ctx)
-
 	// Update lottery pool
-	err = k.UpdateLotteryPool(ctx, strconv.FormatUint(activeLottery.LotteryId, 10), lotteryTxs)
+	err = k.UpdateLotteryPool(ctx, strconv.FormatUint(activeLottery.LotteryId, 10), amount)
 	if err != nil {
 		return nil, err
 	}

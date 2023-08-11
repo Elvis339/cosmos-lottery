@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	"cosmos-lottery/testutil/sample"
+	"github.com/cometbft/cometbft/libs/rand"
 	"testing"
 
 	keepertest "cosmos-lottery/testutil/keeper"
@@ -15,6 +16,8 @@ import (
 func createNLotteryTransaction(keeper *keeper.Keeper, ctx sdk.Context, n int) []types.LotteryTransaction {
 	items := make([]types.LotteryTransaction, n)
 	for i := range items {
+		items[i].CreatedBy = sample.AccAddress()
+		items[i].Bet = sdk.NewInt64Coin("token", int64(rand.Intn(100-1)+1))
 		items[i].Id = keeper.AppendLotteryTransaction(ctx, items[i])
 	}
 	return items

@@ -16,7 +16,7 @@ import (
 func TestActiveLotteryQuery(t *testing.T) {
 	keeper, ctx := keepertest.LotteryKeeper(t)
 	wctx := sdk.WrapSDKContext(ctx)
-	item := createTestActiveLottery(keeper, ctx)
+	item := createTestActiveLottery(keeper, ctx, 1)
 	tests := []struct {
 		desc     string
 		request  *types.QueryGetActiveLotteryRequest

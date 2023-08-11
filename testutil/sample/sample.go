@@ -11,3 +11,19 @@ func AccAddress() string {
 	addr := pk.Address()
 	return sdk.AccAddress(addr).String()
 }
+
+func GenUniqueAddresses(n int) []string {
+	addresses := make([]string, n)
+	hashMap := make(map[string]bool)
+
+	for i := 0; i < n; i++ {
+		addr := AccAddress()
+		for hashMap[addr] == true {
+			addr = AccAddress()
+		}
+		hashMap[addr] = true
+		addresses[i] = addr
+	}
+
+	return addresses
+}

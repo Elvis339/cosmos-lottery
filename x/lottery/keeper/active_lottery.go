@@ -31,3 +31,13 @@ func (k Keeper) RemoveActiveLottery(ctx sdk.Context) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.ActiveLotteryKey))
 	store.Delete([]byte{0})
 }
+
+func (k Keeper) IncrementActiveLottery(ctx sdk.Context) uint64 {
+	current, found := k.GetActiveLottery(ctx)
+	if !found {
+		panic("missing active lottery")
+	}
+	next := current.LotteryId + 1
+	k.SetActiveLottery(ctx, types.ActiveLottery{LotteryId: next})
+	return next
+}
