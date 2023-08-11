@@ -143,9 +143,15 @@ func (k Keeper) GetWinner(ctx sdk.Context) (*types.LotteryTransaction, error) {
 	return &all[winnerIndex], nil
 }
 
+// PruneLotteryTransactions iterate over the keys but avoids the unnecessary fetch of the entire transaction data.
+// This method deletes each key for the lottery transactions
+// within the prefixed store without needing to fetch and unmarshal the transactions.
 func (k Keeper) PruneLotteryTransactions(ctx sdk.Context) {
-	all := k.GetAllLotteryTransaction(ctx)
-	for _, e := range all {
-		k.RemoveLotteryTransaction(ctx, e.Id)
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.LotteryTransactionKey))
+	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		store.Delete(iterator.Key())
 	}
 }

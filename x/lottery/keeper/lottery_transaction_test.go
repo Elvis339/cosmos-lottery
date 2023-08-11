@@ -119,3 +119,13 @@ func TestLotteryTransactionAppend(t *testing.T) {
 	count := keeper.GetLotteryTransactionCount(ctx)
 	require.Equal(t, count, uint64(4))
 }
+
+func TestLotteryTransaction_PruneLotteryTransactions(t *testing.T) {
+	keeper, ctx := keepertest.LotteryKeeper(t)
+
+	createNLotteryTransaction(keeper, ctx, 50)
+	require.Equal(t, 50, len(keeper.GetAllLotteryTransaction(ctx)))
+
+	keeper.PruneLotteryTransactions(ctx)
+	require.Equal(t, 0, len(keeper.GetAllLotteryTransaction(ctx)))
+}
