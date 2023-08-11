@@ -29,7 +29,7 @@ func TestActiveLotteryGet(t *testing.T) {
 		nullify.Fill(&item),
 		nullify.Fill(&rst),
 	)
-	require.Equal(t, 1, rst.LotteryId)
+	require.Equal(t, uint64(1), rst.LotteryId)
 }
 
 func TestActiveLotteryRemove(t *testing.T) {
