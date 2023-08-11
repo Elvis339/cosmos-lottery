@@ -18,7 +18,7 @@ var (
 func createLotteryTx(address string, amount int64) types.LotteryTransaction {
 	tx := types.LotteryTransaction{
 		Id:        id,
-		Bet:       sdk.NewInt64Coin("token", amount),
+		Bet:       sdk.NewInt64Coin(types.TokenDenom, amount),
 		CreatedBy: address,
 		LotteryId: 1,
 	}

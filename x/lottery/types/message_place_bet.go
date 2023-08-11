@@ -48,7 +48,7 @@ func (msg *MsgPlaceBet) ValidateBasic() error {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "bet cannot be negative or zero")
 	}
 
-	bet := sdk.NewInt64Coin("token", int64(msg.GetBet()))
+	bet := sdk.NewInt64Coin(TokenDenom, int64(msg.GetBet()))
 
 	if bet.IsLT(MinBet) {
 		return ErrMinBet.Wrapf(fmt.Sprintf("min. place bet is %d, you sent %d", MinBet.Amount.Uint64(), bet.Amount.Uint64()))

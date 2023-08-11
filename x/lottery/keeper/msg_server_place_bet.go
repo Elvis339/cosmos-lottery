@@ -4,6 +4,7 @@ import (
 	"context"
 	"cosmos-lottery/x/lottery/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"strconv"
 )
 
@@ -22,14 +23,14 @@ func (k msgServer) PlaceBet(goCtx context.Context, msg *types.MsgPlaceBet) (*typ
 		return nil, err
 	}
 
-	bet := sdk.NewInt64Coin("token", int64(msg.GetBet()))
+	bet := sdk.NewInt64Coin(types.TokenDenom, int64(msg.GetBet()))
 	amount := bet.Add(types.Fee).Add(types.MinBet)
 
-	//balance := k.bankKeeper.GetBalance(ctx, addr, "token")
-	//
-	//if balance.IsLT(amount) {
-	//	return nil, sdkerrors.ErrInsufficientFunds.Wrapf("could not place a bet")
-	//}
+	balance := k.bankKeeper.GetBalance(ctx, addr, types.TokenDenom)
+
+	if balance.IsLT(amount) {
+		return nil, sdkerrors.ErrInsufficientFunds.Wrapf("could not place a bet")
+	}
 
 	err = k.bankKeeper.SendCoinsFromAccountToModule(ctx, addr, types.ModuleName, sdk.Coins{amount})
 	if err != nil {

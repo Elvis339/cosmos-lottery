@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	zero                    = sdk.NewInt64Coin("token", 0)
+	zero                    = sdk.NewInt64Coin(types.TokenDenom, 0)
 	defaultSerializationKey = "0||0"
 	betSum                  = zero                    // Total sum of all the bets.
 	minBet                  = defaultSerializationKey // Encoded details of the minimum bet.
@@ -110,7 +110,7 @@ func (m *LotteryTransactionMetadata) decodeBet(serialized string) (sdk.Coin, str
 	if err != nil {
 		panic(err)
 	}
-	amount := sdk.NewInt64Coin("token", parseInt)
+	amount := sdk.NewInt64Coin(types.TokenDenom, parseInt)
 
 	return amount, slice[1]
 }

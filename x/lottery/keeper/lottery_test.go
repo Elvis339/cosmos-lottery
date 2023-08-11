@@ -67,8 +67,8 @@ func TestLotteryGetAll(t *testing.T) {
 func TestLottery_UpdatePool(t *testing.T) {
 	mock := keepertest.NewMockLotteryWithGenesis(t)
 	coins := sdk.Coins{
-		sdk.NewInt64Coin("token", 10),
-		sdk.NewInt64Coin("token", 10),
+		sdk.NewInt64Coin(types.TokenDenom, 10),
+		sdk.NewInt64Coin(types.TokenDenom, 10),
 	}
 
 	for _, coin := range coins {
@@ -77,7 +77,7 @@ func TestLottery_UpdatePool(t *testing.T) {
 	}
 
 	// Index "2" does not exist
-	err := mock.LotteryKeeper.UpdateLotteryPool(mock.Ctx, "2", sdk.NewInt64Coin("token", 10))
+	err := mock.LotteryKeeper.UpdateLotteryPool(mock.Ctx, "2", sdk.NewInt64Coin(types.TokenDenom, 10))
 	require.Error(t, err)
 
 	currentLottery, _ := mock.LotteryKeeper.GetLottery(mock.Ctx, "1")
@@ -128,7 +128,7 @@ func TestLotteryEndBlock_LowestBetWinner(t *testing.T) {
 			lotteryTx[i].CreatedBy = sample.AccAddress()
 		}
 
-		lotteryTx[i].Bet = sdk.NewInt64Coin("token", int64(bets[i]))
+		lotteryTx[i].Bet = sdk.NewInt64Coin(types.TokenDenom, int64(bets[i]))
 		lotteryTx[i].Id = k.AppendLotteryTransaction(ctx, lotteryTx[i])
 	}
 
@@ -178,7 +178,7 @@ func TestLotteryEndBlock_HighestBetWinner(t *testing.T) {
 			lotteryTx[i].CreatedBy = sample.AccAddress()
 		}
 
-		lotteryTx[i].Bet = sdk.NewInt64Coin("token", int64(bets[i]))
+		lotteryTx[i].Bet = sdk.NewInt64Coin(types.TokenDenom, int64(bets[i]))
 		lotteryTx[i].Id = k.AppendLotteryTransaction(ctx, lotteryTx[i])
 	}
 
@@ -231,12 +231,12 @@ func TestLotteryEndBlock_Winner(t *testing.T) {
 		}
 		betSum += bets[i]
 
-		lotteryTx[i].Bet = sdk.NewInt64Coin("token", int64(bets[i]))
+		lotteryTx[i].Bet = sdk.NewInt64Coin(types.TokenDenom, int64(bets[i]))
 		lotteryTx[i].Id = k.AppendLotteryTransaction(ctx, lotteryTx[i])
 	}
 
 	// Get sum of bets as a reward
-	bankKeeper.EXPECT().SendCoinsFromModuleToAccount(ctx, types.ModuleName, victor, sdk.Coins{sdk.NewInt64Coin("token", int64(betSum))})
+	bankKeeper.EXPECT().SendCoinsFromModuleToAccount(ctx, types.ModuleName, victor, sdk.Coins{sdk.NewInt64Coin(types.TokenDenom, int64(betSum))})
 
 	err := k.LotteryEndBlock(ctx, victor)
 	require.NoError(t, err)

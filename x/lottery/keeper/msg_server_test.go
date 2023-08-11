@@ -15,13 +15,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var (
-	alice  = sample.AccAddress()
-	bob    = sample.AccAddress()
-	peggy  = sample.AccAddress()
-	victor = sample.AccAddress()
-)
-
 func setupMsgServer(t testing.TB) (types.MsgServer, context.Context) {
 	k, ctx := keepertest.LotteryKeeper(t)
 	return keeper.NewMsgServerImpl(*k), sdk.WrapSDKContext(ctx)
@@ -114,54 +107,61 @@ func TestMsgServer_PlaceBetError(t *testing.T) {
 	}
 }
 
-func TestMsgServer_PlaceBet(t *testing.T) {
-	activeLotteryId := uint64(1)
-	lotteryList := types.Lottery{
-		Index: strconv.FormatUint(activeLotteryId, 10),
-		Fee:   types.Fee,
-		Pool:  sdk.NewInt64Coin("token", 20),
-	}
+func TestMsgServer_PlaceBetNotEnoughBalance(t *testing.T) {
+	mock := keepertest.NewMockLotteryWithGenesis(t)
+	k := mock.LotteryKeeper
+	bankKeeper := mock.BankKeeper
+	ctx := mock.Ctx
 
-	lotteryTx := []*types.LotteryTransaction{
-		{
-			Id:        1,
-			Bet:       sdk.NewInt64Coin("token", 10),
-			LotteryId: activeLotteryId,
-			CreatedBy: alice,
-		},
-		{
-			Id:        2,
-			Bet:       sdk.NewInt64Coin("token", 5),
-			LotteryId: activeLotteryId,
-			CreatedBy: bob,
-		},
-		{
-			Id:        3,
-			Bet:       sdk.NewInt64Coin("token", 5),
-			LotteryId: activeLotteryId,
-			CreatedBy: peggy,
-		},
-	}
+	victor, _ := sdk.AccAddressFromBech32(sample.AccAddress())
 
-	msgServer, goCtx, k := mockGenesis(t, activeLotteryId, lotteryList)
-	ctx := sdk.UnwrapSDKContext(goCtx)
+	msgServer := keeper.NewMsgServerImpl(*k)
 
-	bet := sdk.NewInt64Coin("token", 3)
+	bet := sdk.NewInt64Coin(types.TokenDenom, 3)
+	amountCharged := bet.Add(types.Fee).Add(types.MinBet)
+
+	bankKeeper.EXPECT().GetBalance(ctx, victor, types.TokenDenom).AnyTimes().Return(sdk.NewInt64Coin(types.TokenDenom, 0))
+	bankKeeper.EXPECT().SendCoinsFromAccountToModule(ctx, victor, types.ModuleName, sdk.Coins{amountCharged}).AnyTimes()
 
 	// Place a bet
 	_, err := msgServer.PlaceBet(ctx, &types.MsgPlaceBet{
-		Creator: victor,
+		Creator: victor.String(),
+		Bet:     bet.Amount.Uint64(),
+	})
+	require.Error(t, err)
+}
+
+func TestMsgServer_PlaceBetSuccess(t *testing.T) {
+	mock := keepertest.NewMockLotteryWithGenesis(t)
+	k := mock.LotteryKeeper
+	bankKeeper := mock.BankKeeper
+	ctx := mock.Ctx
+
+	victor, _ := sdk.AccAddressFromBech32(sample.AccAddress())
+
+	msgServer := keeper.NewMsgServerImpl(*k)
+
+	bet := sdk.NewInt64Coin(types.TokenDenom, 3)
+	amountCharged := bet.Add(types.Fee).Add(types.MinBet)
+
+	bankKeeper.EXPECT().GetBalance(ctx, victor, types.TokenDenom).AnyTimes().Return(sdk.NewInt64Coin(types.TokenDenom, 10))
+	bankKeeper.EXPECT().SendCoinsFromAccountToModule(ctx, victor, types.ModuleName, sdk.Coins{amountCharged}).AnyTimes()
+
+	// Place a bet
+	_, err := msgServer.PlaceBet(ctx, &types.MsgPlaceBet{
+		Creator: victor.String(),
 		Bet:     bet.Amount.Uint64(),
 	})
 	require.NoError(t, err)
 
 	// === Assert state has been changed correctly ===
-	lotteryState, found := k.GetLottery(ctx, strconv.FormatUint(activeLotteryId, 10))
+	getLottery, found := k.GetLottery(ctx, "1")
 	require.Equal(t, found, true)
 
 	// LotteryTransactions length should be increased by 1
-	require.Equal(t, 4, len(lotteryTx))
+	require.Equal(t, 1, len(k.GetAllLotteryTransaction(ctx)))
+	require.Equal(t, uint64(1), k.GetLotteryTransactionCount(ctx))
 
 	// Pool should be increased by: Bet + MinBet + Fee
-	require.Equal(t, lotteryState.Pool.Amount.Uint64(), bet.Add(types.MinBet).Add(types.Fee).Amount.Uint64())
+	require.Equal(t, amountCharged.Amount.Uint64(), getLottery.Pool.Amount.Uint64())
 }

@@ -17,7 +17,7 @@ func createNLotteryTransaction(keeper *keeper.Keeper, ctx sdk.Context, n int) []
 	items := make([]types.LotteryTransaction, n)
 	for i := range items {
 		items[i].CreatedBy = sample.AccAddress()
-		items[i].Bet = sdk.NewInt64Coin("token", int64(rand.Intn(100-1)+1))
+		items[i].Bet = sdk.NewInt64Coin(types.TokenDenom, int64(rand.Intn(100-1)+1))
 		items[i].Id = keeper.AppendLotteryTransaction(ctx, items[i])
 	}
 	return items
@@ -70,22 +70,22 @@ func TestLotteryTransactionAppend(t *testing.T) {
 
 	items := []types.LotteryTransaction{{
 		Id:        0,
-		Bet:       sdk.NewInt64Coin("token", 5),
+		Bet:       sdk.NewInt64Coin(types.TokenDenom, 5),
 		CreatedBy: sample.AccAddress(),
 		LotteryId: 1,
 	}, {
 		Id:        1,
-		Bet:       sdk.NewInt64Coin("token", 3),
+		Bet:       sdk.NewInt64Coin(types.TokenDenom, 3),
 		CreatedBy: bob,
 		LotteryId: 1,
 	}, {
 		Id:        2,
-		Bet:       sdk.NewInt64Coin("token", 10),
+		Bet:       sdk.NewInt64Coin(types.TokenDenom, 10),
 		CreatedBy: alice,
 		LotteryId: 1,
 	}, {
 		Id:        3,
-		Bet:       sdk.NewInt64Coin("token", 2),
+		Bet:       sdk.NewInt64Coin(types.TokenDenom, 2),
 		CreatedBy: sample.AccAddress(),
 		LotteryId: 1,
 	}}
@@ -101,7 +101,7 @@ func TestLotteryTransactionAppend(t *testing.T) {
 	// Alice figures out that her bet is the highest one, she now wants to de-risk, so she sends another LotteryTx
 	// with lower bet
 	aliceLotteryTx := types.LotteryTransaction{
-		Bet:       sdk.NewInt64Coin("token", 4),
+		Bet:       sdk.NewInt64Coin(types.TokenDenom, 4),
 		CreatedBy: alice,
 		LotteryId: 1,
 	}

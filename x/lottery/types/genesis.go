@@ -9,13 +9,15 @@ import (
 // DefaultIndex is the default global index
 const DefaultIndex uint64 = 1
 
+const TokenDenom = "ltry"
+
 var (
-	Fee  = sdk.NewInt64Coin("token", 5)
-	Pool = sdk.NewInt64Coin("token", 0)
+	Fee  = sdk.NewInt64Coin(TokenDenom, 5)
+	Pool = sdk.NewInt64Coin(TokenDenom, 0)
 
-	MinBet = sdk.NewInt64Coin("token", 1)
+	MinBet = sdk.NewInt64Coin(TokenDenom, 1)
 
-	MaxBet = sdk.NewInt64Coin("token", 100)
+	MaxBet = sdk.NewInt64Coin(TokenDenom, 100)
 )
 
 // DefaultGenesis returns the default genesis state
