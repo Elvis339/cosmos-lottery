@@ -107,34 +107,26 @@ func (k Keeper) LotteryEndBlock(goCtx context.Context, winner sdk.AccAddress) er
 	highestBetFound, _, highestBetAddress := k.lotteryTxMeta.GetMaxBet()
 	lowestBetFound, _, lowestBetAddress := k.lotteryTxMeta.GetMinBet()
 
-	fmt.Println("meta=", k.lotteryTxMeta)
-	fmt.Printf("lowest bet found=%t\n", lowestBetFound)
-	fmt.Printf("winner.String()=%s\n", winner.String())
-	fmt.Printf("lowestBetAddress=%s\n", lowestBetAddress)
 	// If winner placed the lowest bet, no payment is issued, current lottery pool is carried over
 	if lowestBetFound == true && winner.String() == lowestBetAddress {
 		nextLottery.Pool = lottery.Pool
-		fmt.Println("I'm the lowest")
 	} else {
-		fmt.Println("I'm not the lowest")
-		nextLottery.Pool = types.Pool
-
-		//var paymentAmount sdk.Coin
+		var paymentAmount sdk.Coin
 
 		// If the winner placed the highest bet, the entire pool is paid to the winner
 		if highestBetFound == true && winner.String() == highestBetAddress {
-			//paymentAmount = lottery.Pool
-			fmt.Printf("winner placed the highest bet set payment amount to=%d", lottery.Pool.Amount.Uint64())
+			paymentAmount = lottery.Pool
+			nextLottery.Pool = types.Pool
 		} else {
 			// Winner did not place highest or lowest bet, the winner is paid the sum of all bets (without fees)
-			//paymentAmount = k.lotteryTxMeta.GetBetSum()
-			fmt.Printf("Random winner sending %d", k.lotteryTxMeta.GetBetSum().Amount.Uint64())
+			paymentAmount = k.lotteryTxMeta.GetBetSum()
 		}
 
 		// Issue payment
-		//err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, winner, sdk.Coins{paymentAmount})
-		//if err != nil {
-		//}
+		err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, winner, sdk.Coins{paymentAmount})
+		if err != nil {
+			return err
+		}
 	}
 
 	// Prune in-memory data structure

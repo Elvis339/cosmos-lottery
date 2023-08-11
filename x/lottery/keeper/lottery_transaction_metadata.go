@@ -56,7 +56,7 @@ func (m *LotteryTransactionMetadata) Set(lotteryTx types.LotteryTransaction) {
 	currBet := m.GetBet(address)
 
 	if !found && currBet.IsEqual(zero) {
-		m.addressToLotteryTxId[address] = lotteryTx.LotteryId
+		m.addressToLotteryTxId[address] = lotteryTx.Id
 	}
 
 	betSum = betSum.Sub(currBet)
