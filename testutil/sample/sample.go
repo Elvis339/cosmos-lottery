@@ -1,9 +1,12 @@
 package sample
 
 import (
+	"cosmos-lottery/x/lottery/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
+
+var testLotteryId = uint64(1)
 
 // AccAddress returns a sample account address
 func AccAddress() string {
@@ -26,4 +29,15 @@ func GenUniqueAddresses(n int) []string {
 	}
 
 	return addresses
+}
+
+func CreateLotteryTx(address string, amount int64) types.LotteryTransaction {
+	tx := types.LotteryTransaction{
+		Id:        testLotteryId,
+		Bet:       sdk.NewInt64Coin(types.TokenDenom, amount),
+		CreatedBy: address,
+		LotteryId: 1,
+	}
+	testLotteryId += 1
+	return tx
 }

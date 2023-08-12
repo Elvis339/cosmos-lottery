@@ -82,7 +82,7 @@ func (k Keeper) UpdateLotteryPool(ctx sdk.Context, index string, amount sdk.Coin
 	return nil
 }
 
-func (k Keeper) LotteryEndBlock(goCtx context.Context, winner sdk.AccAddress) error {
+func (k Keeper) EndLottery(goCtx context.Context, winner sdk.AccAddress) error {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	lotteryTransactionCount := k.GetLotteryTransactionCount(ctx)

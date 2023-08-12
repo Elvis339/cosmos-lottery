@@ -24,6 +24,7 @@ type MockLotteryKeeper struct {
 	Ctx           sdk.Context
 	LotteryKeeper *keeper.Keeper
 	BankKeeper    *testutil.MockBankKeeper
+	StateStore    store.CommitMultiStore
 }
 
 // Keep this to support existing interface
@@ -104,6 +105,7 @@ func NewMockLotteryKeeper(t *testing.T) MockLotteryKeeper {
 		Ctx:           ctx,
 		LotteryKeeper: k,
 		BankKeeper:    bankKeeperMock,
+		StateStore:    stateStore,
 	}
 }
 func NewMockLotteryWithGenesis(t *testing.T) MockLotteryKeeper {

@@ -93,7 +93,7 @@ func TestLotteryEndBlock_NotEnoughTx(t *testing.T) {
 
 	addr, _ := sdk.AccAddressFromBech32(sample.AccAddress())
 
-	err := k.LotteryEndBlock(ctx, addr)
+	err := k.EndLottery(ctx, addr)
 	require.NoError(t, err)
 
 	require.Equal(t, uint64(9), k.GetLotteryTransactionCount(ctx))
@@ -132,7 +132,7 @@ func TestLotteryEndBlock_LowestBetWinner(t *testing.T) {
 		lotteryTx[i].Id = k.AppendLotteryTransaction(ctx, lotteryTx[i])
 	}
 
-	err := k.LotteryEndBlock(ctx, alice)
+	err := k.EndLottery(ctx, alice)
 	require.NoError(t, err)
 
 	// Verify LotteryTransactionCounter has been set to 0
@@ -185,7 +185,7 @@ func TestLotteryEndBlock_HighestBetWinner(t *testing.T) {
 	// Winner placed the highest bet gets the whole lottery pool as a reward
 	bankKeeper.EXPECT().SendCoinsFromModuleToAccount(ctx, types.ModuleName, bob, sdk.Coins{lottery.Pool})
 
-	err := k.LotteryEndBlock(ctx, bob)
+	err := k.EndLottery(ctx, bob)
 	require.NoError(t, err)
 
 	// Verify LotteryTransactionCounter has been set to 0
@@ -238,7 +238,7 @@ func TestLotteryEndBlock_Winner(t *testing.T) {
 	// Get sum of bets as a reward
 	bankKeeper.EXPECT().SendCoinsFromModuleToAccount(ctx, types.ModuleName, victor, sdk.Coins{sdk.NewInt64Coin(types.TokenDenom, int64(betSum))})
 
-	err := k.LotteryEndBlock(ctx, victor)
+	err := k.EndLottery(ctx, victor)
 	require.NoError(t, err)
 
 	// Verify LotteryTransactionCounter has been set to 0

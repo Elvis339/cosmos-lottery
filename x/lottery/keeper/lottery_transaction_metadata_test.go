@@ -3,36 +3,23 @@ package keeper
 import (
 	"cosmos-lottery/testutil/sample"
 	"cosmos-lottery/x/lottery/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
 
 var (
-	id    = uint64(1)
 	alice = sample.AccAddress()
 	bob   = sample.AccAddress()
 	peggy = sample.AccAddress()
 )
 
-func createLotteryTx(address string, amount int64) types.LotteryTransaction {
-	tx := types.LotteryTransaction{
-		Id:        id,
-		Bet:       sdk.NewInt64Coin(types.TokenDenom, amount),
-		CreatedBy: address,
-		LotteryId: 1,
-	}
-	id += 1
-	return tx
-}
-
 func TestTransactionMetadata_MinAndMaxBet(t *testing.T) {
 	m := NewLotteryTransactionMetadata()
 
 	lotteryTx := []types.LotteryTransaction{
-		createLotteryTx(alice, 4),
-		createLotteryTx(bob, 1),
-		createLotteryTx(peggy, 3),
+		sample.CreateLotteryTx(alice, 4),
+		sample.CreateLotteryTx(bob, 1),
+		sample.CreateLotteryTx(peggy, 3),
 	}
 
 	for _, tx := range lotteryTx {
@@ -55,9 +42,9 @@ func TestTransactionMetadata_BetSum(t *testing.T) {
 	m := NewLotteryTransactionMetadata()
 
 	lotteryTx := []types.LotteryTransaction{
-		createLotteryTx(alice, 4),
-		createLotteryTx(bob, 2),
-		createLotteryTx(peggy, 3),
+		sample.CreateLotteryTx(alice, 4),
+		sample.CreateLotteryTx(bob, 2),
+		sample.CreateLotteryTx(peggy, 3),
 	}
 
 	for _, tx := range lotteryTx {
@@ -66,10 +53,10 @@ func TestTransactionMetadata_BetSum(t *testing.T) {
 
 	require.Equal(t, int64(9), m.GetBetSum().Amount.Int64())
 
-	m.Set(createLotteryTx(bob, 1))
+	m.Set(sample.CreateLotteryTx(bob, 1))
 	require.Equal(t, int64(8), m.GetBetSum().Amount.Int64())
 
-	m.Set(createLotteryTx(bob, 3))
+	m.Set(sample.CreateLotteryTx(bob, 3))
 	require.Equal(t, int64(10), m.GetBetSum().Amount.Int64())
 }
 
@@ -77,9 +64,9 @@ func TestTransactionMetadata_Prune(t *testing.T) {
 	m := NewLotteryTransactionMetadata()
 
 	lotteryTx := []types.LotteryTransaction{
-		createLotteryTx(alice, 4),
-		createLotteryTx(bob, 2),
-		createLotteryTx(peggy, 3),
+		sample.CreateLotteryTx(alice, 4),
+		sample.CreateLotteryTx(bob, 2),
+		sample.CreateLotteryTx(peggy, 3),
 	}
 
 	for _, tx := range lotteryTx {
