@@ -1,19 +1,24 @@
 package types
 
 import (
+	"bytes"
 	"crypto/sha256"
-	"fmt"
+	"encoding/binary"
 )
 
 func Hash(lotteryTx []LotteryTransaction) []byte {
-	str := ""
 	h := sha256.New()
+	buf := new(bytes.Buffer)
 
 	for _, tx := range lotteryTx {
-		str += fmt.Sprintf("%d||%d||%s||%d", tx.Id, tx.Bet.Amount.Uint64(), tx.CreatedBy, tx.LotteryId)
-	}
-	h.Write([]byte(str))
-	bs := h.Sum(nil)
+		binary.Write(buf, binary.BigEndian, tx.Id)
+		binary.Write(buf, binary.BigEndian, tx.Bet.Amount.Uint64())
+		buf.WriteString(tx.CreatedBy)
+		binary.Write(buf, binary.BigEndian, tx.LotteryId)
 
-	return bs
+		h.Write(buf.Bytes())
+		buf.Reset() // Reset the buffer for the next iteration
+	}
+
+	return h.Sum(nil)
 }
