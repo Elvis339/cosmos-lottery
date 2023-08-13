@@ -153,40 +153,42 @@ func (m *LotteryTransactionMetadata) GetLotteryTransactionId(address string) (bo
 	return true, lotteryTxId
 }
 
-func (m *LotteryTransactionMetadata) RemoveLotteryTransactionId(ctx sdk.Context, address string) {
+func (m *LotteryTransactionMetadata) RemoveLotteryTransactionId(address string) {
 	found, _ := m.GetLotteryTransactionId(address)
 
-	if found {
-		ctx.Logger().Info(fmt.Sprintf("Attempting to remove LotteryTransaction for address: %s", address))
+	// If no transaction ID is found, exit early.
+	if !found {
+		return
+	}
 
-		//subAmount := m.GetBet(address)
+	currentAmount := m.GetBet(address)
+	if currentAmount.IsZero() {
+		return
+	}
 
-		minBetFound, _, minAddr := m.GetMinBet()
-		if minBetFound && minAddr == address {
-			ctx.Logger().Info("Address matched with minBet. Adjusting the bet amount.")
+	amountToSubtract := currentAmount
 
-			minVal := sdk.NewInt64Coin(types.TokenDenom, 100)
-			addr := ""
-			for key, v := range m.addressToBet {
-				if v.IsLT(minVal) && key != address {
-					minVal = v
-					addr = key
-				}
+	minBetFound, minValue, minAddr := m.GetMinBet()
+	if minBetFound && minAddr == address {
+		minVal := sdk.NewInt64Coin(types.TokenDenom, 100)
+		addr := ""
+		for key, v := range m.addressToBet {
+			if v.IsLT(minVal) && key != address {
+				minVal = v
+				addr = key
 			}
-
-			minBet = m.encodeBet(types.LotteryTransaction{
-				Bet:       minVal,
-				CreatedBy: addr,
-				LotteryId: 0, // lottery id doesn't matter for this
-			})
-
-			//subAmount = minBetAmount
 		}
 
-		maxBetFound, _, maxAddr := m.GetMaxBet()
-		if maxBetFound && maxAddr == address {
-			ctx.Logger().Info("Address matched with maxBet. Adjusting the bet amount.")
+		minBet = m.encodeBet(types.LotteryTransaction{
+			Bet:       minVal,
+			CreatedBy: addr,
+			LotteryId: 0, // lottery id doesn't matter for this
+		})
 
+		amountToSubtract = minValue
+	} else {
+		maxBetFound, maxValue, maxAddr := m.GetMaxBet()
+		if maxBetFound && maxAddr == address {
 			maxVal := zero
 			addr := ""
 			for key, value := range m.addressToBet {
@@ -202,20 +204,15 @@ func (m *LotteryTransactionMetadata) RemoveLotteryTransactionId(ctx sdk.Context,
 				LotteryId: 0, // lottery id doesn't matter in this case
 			})
 
-			//subAmount = maxBetAmount
+			amountToSubtract = maxValue
 		}
-
-		//newBetSum := betSum.Sub(subAmount)
-		//if !newBetSum.IsNegative() {
-		//	betSum = newBetSum
-		//	ctx.Logger().Info(fmt.Sprintf("Updated betSum after subtraction: %d", betSum.Amount.Uint64()))
-		//}
-
-		delete(m.addressToLotteryTxId, address)
-		delete(m.addressToBet, address)
-
-		ctx.Logger().Info(fmt.Sprintf("Successfully removed LotteryTransaction for address: %s", address))
-	} else {
-		ctx.Logger().Info(fmt.Sprintf("No LotteryTransaction found for address: %s", address))
 	}
+
+	if betSum.IsGTE(amountToSubtract) {
+		newBetSum := betSum.Sub(amountToSubtract)
+		betSum = newBetSum
+	}
+
+	delete(m.addressToLotteryTxId, address)
+	delete(m.addressToBet, address)
 }

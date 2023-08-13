@@ -50,7 +50,7 @@ func (k Keeper) AppendLotteryTransaction(ctx sdk.Context, lotteryTransaction typ
 		if exists && val.GetCreatedBy() == lotteryTransaction.GetCreatedBy() && val.LotteryId == lotteryTransaction.LotteryId {
 			lotteryTransaction.Id = val.Id
 		} else {
-			k.LotteryTransactionMetadata.RemoveLotteryTransactionId(ctx, lotteryTransaction.GetCreatedBy())
+			k.LotteryTransactionMetadata.RemoveLotteryTransactionId(lotteryTransaction.GetCreatedBy())
 			k.SetLotteryTransactionCount(ctx, count+1)
 		}
 		k.LotteryTransactionMetadata.Set(lotteryTransaction)

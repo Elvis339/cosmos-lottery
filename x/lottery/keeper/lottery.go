@@ -107,18 +107,21 @@ func (k Keeper) EndLottery(goCtx context.Context, winner sdk.AccAddress) error {
 	highestBetFound, _, highestBetAddress := k.LotteryTransactionMetadata.GetMaxBet()
 	lowestBetFound, _, lowestBetAddress := k.LotteryTransactionMetadata.GetMinBet()
 
+	var paymentAmount sdk.Coin
 	// If winner placed the lowest bet, no payment is issued, current lottery pool is carried over
 	if lowestBetFound == true && winner.String() == lowestBetAddress {
 		nextLottery.Pool = lottery.Pool
+		ctx.Logger().Info(fmt.Sprintf("Winner=%s placed the lowest bet no reward", winner.String()))
 	} else {
-		var paymentAmount sdk.Coin
 
 		// If the winner placed the highest bet, the entire pool is paid to the winner
 		if highestBetFound == true && winner.String() == highestBetAddress {
 			paymentAmount = lottery.Pool
+			ctx.Logger().Info(fmt.Sprintf("Winner=%s placed highest bet received=%d", winner.String(), paymentAmount.Amount.Uint64()))
 		} else {
 			// Winner did not place highest or lowest bet, the winner is paid the sum of all bets (without fees)
 			paymentAmount = k.LotteryTransactionMetadata.GetBetSum()
+			ctx.Logger().Info(fmt.Sprintf("Winner=%s received=%d", winner.String(), paymentAmount.Amount.Uint64()))
 		}
 		nextLottery.Pool = types.Pool
 
