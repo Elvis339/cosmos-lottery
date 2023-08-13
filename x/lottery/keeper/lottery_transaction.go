@@ -33,53 +33,33 @@ func (k Keeper) SetLotteryTransactionCount(ctx sdk.Context, count uint64) {
 	store.Set(byteKey, bz)
 }
 
-/*
-AppendLotteryTransaction
-On a new bet:
-1. Check if the user's address exists in the in-memory map (LotteryTransactionMetadata).
-2. If the user's address is NOT present:
-  - Add the user's address to the hash map.
-  - Increment the transaction count.
-
-3. If the user's address IS present:
-  - Update existing transaction bet with the new bet details retaining same insertion order.
-  - Maintain the same transaction ID.
-*/
-func (k Keeper) AppendLotteryTransaction(
-	ctx sdk.Context,
-	lotteryTransaction types.LotteryTransaction,
-) uint64 {
+// AppendLotteryTransaction adds or updates a LotteryTransaction in the store.
+// If a LotteryTransaction with the same creator and LotteryId already exists in the store, it updates the existing record handling only the most recent tx.
+// Otherwise, it increments the transaction count and appends a new transaction.
+// The function returns the current transaction count.
+func (k Keeper) AppendLotteryTransaction(ctx sdk.Context, lotteryTransaction types.LotteryTransaction) uint64 {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.LotteryTransactionKey))
 	isInMetadata, lotteryTxId := k.LotteryTransactionMetadata.GetLotteryTransactionId(lotteryTransaction.GetCreatedBy())
 
 	count := k.GetLotteryTransactionCount(ctx)
-
 	lotteryTransaction.Id = count
 
-	if isInMetadata == true {
-		oldLotteryTx, oldLotteryTxExist := k.GetLotteryTransaction(ctx, lotteryTxId)
-		if oldLotteryTxExist == true {
-			if oldLotteryTx.CreatedBy == lotteryTransaction.CreatedBy {
-				if oldLotteryTx.LotteryId != lotteryTransaction.LotteryId {
-					// Because their lottery id is different `mesamo babe i zabe`
-					k.LotteryTransactionMetadata.RemoveLotteryTransactionId(lotteryTransaction.GetCreatedBy())
-					k.LotteryTransactionMetadata.Set(lotteryTransaction)
-					k.SetLotteryTransactionCount(ctx, count+1)
-				} else {
-					lotteryTransaction.Id = oldLotteryTx.Id
-				}
-			}
-		}
-	} else {
-		// Update meta
-		k.LotteryTransactionMetadata.Set(lotteryTransaction)
+	if isInMetadata {
+		val, exists := k.GetLotteryTransaction(ctx, lotteryTxId)
 
-		// Update lotteryTransaction count
+		if exists && val.GetCreatedBy() == lotteryTransaction.GetCreatedBy() && val.LotteryId == lotteryTransaction.LotteryId {
+			lotteryTransaction.Id = val.Id
+		} else {
+			k.LotteryTransactionMetadata.RemoveLotteryTransactionId(ctx, lotteryTransaction.GetCreatedBy())
+			k.SetLotteryTransactionCount(ctx, count+1)
+		}
+		k.LotteryTransactionMetadata.Set(lotteryTransaction)
+		store.Set(GetLotteryTransactionIDBytes(lotteryTransaction.Id), k.cdc.MustMarshal(&lotteryTransaction))
+	} else {
+		k.LotteryTransactionMetadata.Set(lotteryTransaction)
+		store.Set(GetLotteryTransactionIDBytes(lotteryTransaction.Id), k.cdc.MustMarshal(&lotteryTransaction))
 		k.SetLotteryTransactionCount(ctx, count+1)
 	}
-
-	appendedValue := k.cdc.MustMarshal(&lotteryTransaction)
-	store.Set(GetLotteryTransactionIDBytes(lotteryTransaction.Id), appendedValue)
 
 	return count
 }
@@ -165,8 +145,6 @@ func (k Keeper) PruneLotteryTransactions(ctx sdk.Context, activeLottery uint64) 
 	if prevLotteryId == 0 {
 		prevLotteryId = 1
 	}
-
-	ctx.Logger().Info(fmt.Sprintf("--------- REMOVING ALL LOTTERY TX WITH LOTTERY ID %d ---------", prevLotteryId))
 
 	for index, tx := range allLotteryTx {
 		if allLotteryTx[index].LotteryId == prevLotteryId {

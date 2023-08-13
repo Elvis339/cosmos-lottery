@@ -14,6 +14,7 @@ func (k Keeper) TriggerEndLottery(ctx sdk.Context) {
 	blockProposerHasBets, _ := k.LotteryTransactionMetadata.GetLotteryTransactionId(blockProposerAddress)
 
 	if blockProposerHasBets == true {
+		ctx.Logger().Info("block proposer has placed bets skipping...")
 		return
 	}
 
