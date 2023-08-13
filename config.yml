@@ -1,21 +1,103 @@
 version: 1
+build:
+  main: cmd/cosmos-lotteryd
+  binary: cosmos-lotteryd
 accounts:
 - name: alice
   coins:
-  - 20000token
-  - 200000000stake
-- name: bob
+    - 500ltry
+    - 200000000stake
+- name: client1
   coins:
-  - 10000token
-  - 100000000stake
+    - 500ltry
+    - 200000000stake
+- name: client2
+  coins:
+    - 500ltry
+    - 200000000stake
+- name: client3
+  coins:
+    - 500ltry
+    - 200000000stake
+- name: client4
+  coins:
+    - 500ltry
+    - 200000000stake
+- name: client5
+  coins:
+    - 500ltry
+    - 200000000stake
+- name: client6
+  coins:
+    - 500ltry
+    - 200000000stake
+- name: client7
+  coins:
+    - 500ltry
+    - 200000000stake
+- name: client8
+  coins:
+    - 500ltry
+    - 200000000stake
+- name: client9
+  coins:
+    - 500ltry
+    - 200000000stake
+- name: client10
+  coins:
+    - 500ltry
+    - 200000000stake
+- name: client11
+  coins:
+    - 500ltry
+    - 200000000stake
+- name: client12
+  coins:
+    - 500ltry
+    - 200000000stake
+- name: client13
+  coins:
+    - 500ltry
+    - 200000000stake
+- name: client14
+  coins:
+    - 500ltry
+    - 200000000stake
+- name: client15
+  coins:
+    - 500ltry
+    - 200000000stake
+- name: client16
+  coins:
+    - 500ltry
+    - 200000000stake
+- name: client17
+  coins:
+    - 500ltry
+    - 200000000stake
+- name: client18
+  coins:
+    - 500ltry
+    - 200000000stake
+- name: client19
+  coins:
+    - 500ltry
+    - 200000000stake
+- name: client20
+  coins:
+    - 500ltry
+    - 200000000stake
 client:
   openapi:
     path: docs/static/openapi.yml
 faucet:
-  name: bob
+  name: alice
   coins:
   - 5token
   - 100000stake
 validators:
 - name: alice
   bonded: 100000000stake
+  config:
+    consensus:
+      timeout_commit: "20s"
