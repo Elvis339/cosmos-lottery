@@ -95,9 +95,31 @@ faucet:
   coins:
   - 5token
   - 100000stake
+genesis:
+  app_state:
+    lottery:
+      activeLottery:
+        lotteryId: "2"
+      lotteryList:
+        - fee:
+            amount: "5"
+            denom: "ltry"
+          index: "1"
+          pool:
+            amount: "390"
+            denom: "ltry"
+          winner: "cosmos1z7nnsdjs4v4fm5ryf0cxqu08tpjpvx26kk4xyx"
+        - fee:
+            amount: "5"
+            denom: "ltry"
+          index: "2"
+          pool:
+            amount: "0"
+            denom: "ltry"
+          winner: ""
 validators:
 - name: alice
   bonded: 100000000stake
   config:
     consensus:
-      timeout_commit: "20s"
+      timeout_commit: "300s"

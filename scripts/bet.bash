@@ -24,14 +24,16 @@ if which ignite >/dev/null 2>&1; then
               fi
           done < <(cosmos-lotteryd keys list)
 
-          for _ in {1..2}; do
+          for count in {0..0}; do
+            echo "--- Count ${count} ---"
               for index in "${!names[@]}"; do
                   bet=${names[index]#client}
                   if [ "$bet" == "alice" ]; then
                       bet=$(( RANDOM % 100 + 1 ))
                   fi
                   addr=${addresses[index]}
-                  sleep $(( RANDOM % 10 + 1 ))
+#                  sleep $(( RANDOM % 10 + 1 ))
+                   sleep 2
 
                   echo "${addr} placed a bet=${bet}"
                   cosmos-lotteryd tx lottery place-bet $bet --from $addr --yes > /dev/null
