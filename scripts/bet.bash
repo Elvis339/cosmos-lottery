@@ -24,7 +24,8 @@ if which ignite >/dev/null 2>&1; then
               fi
           done < <(cosmos-lotteryd keys list)
 
-          for count in {0..0}; do
+          # Loop 100 times, update this param if you want better test control
+          for count in {1..100}; do
             echo "--- Count ${count} ---"
               for index in "${!names[@]}"; do
                   bet=${names[index]#client}
@@ -32,8 +33,8 @@ if which ignite >/dev/null 2>&1; then
                       bet=$(( RANDOM % 100 + 1 ))
                   fi
                   addr=${addresses[index]}
-#                  sleep $(( RANDOM % 10 + 1 ))
-                   sleep 2
+                  # Control time between bets placed
+                  sleep $(( RANDOM % 10 + 1 ))
 
                   echo "${addr} placed a bet=${bet}"
                   cosmos-lotteryd tx lottery place-bet $bet --from $addr --yes > /dev/null
