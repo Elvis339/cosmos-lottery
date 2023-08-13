@@ -11,6 +11,17 @@
   - `sudo chmod +x ./scripts/bet.bash`
   - `./scripts/bet.bash`
 
+### Note
+- block production `timeout_commit` is set to `300s`, update it to `15s`
+- read comment from `bet.bash`
+
+## Commands
+- `cosmos-lotteryd q lottery show-active-lottery` show active lottery
+- `cosmos-lotteryd q list-lottery | jless --yaml` list all lottery
+- `cosmos-lotteryd q list-lottery-transaction | jless --yaml` list all lottery transactions
+- `cosmos-lotteryd tx lottery place-bet $bet --from $addr --yes | jless --yaml` place bet
+- `cosmos-lotteryd q bank balances $addr | jless --yaml` check balance
+
 # Lottery System Architecture Overview
 
 ## **Primary Features:**
@@ -58,7 +69,7 @@ graph TB
     yesBalance --> validateBet[Validate Bet: Bet >= Fee + Min Bet]
     validateBet --> validBet{Is Bet Valid?}
     
-    validBet --> yesValid[Check if user already placed a bet in the active lottery]
+    validBet --> yesValid[Check if user already placed a bet in the lottery tx]
     validBet --> noValid[End Transaction: Invalid Bet]
     
     yesValid --> exists{Existing Transaction?}
