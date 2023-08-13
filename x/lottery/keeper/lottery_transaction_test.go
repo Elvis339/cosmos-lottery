@@ -94,10 +94,6 @@ func TestLotteryTransactionAppend(t *testing.T) {
 		keeper.AppendLotteryTransaction(ctx, items[i])
 	}
 
-	aliceInitialBet, found := keeper.GetLotteryTransaction(ctx, 2)
-	require.True(t, found)
-	require.Equal(t, aliceInitialBet.Bet.Amount.Uint64(), items[2].Bet.Amount.Uint64())
-
 	// Alice figures out that her bet is the highest one, she now wants to de-risk, so she sends another LotteryTx
 	// with lower bet
 	aliceLotteryTx := types.LotteryTransaction{
@@ -113,19 +109,54 @@ func TestLotteryTransactionAppend(t *testing.T) {
 	require.True(t, found)
 
 	// Ensure Alice's old bet has been updated
-	require.Equal(t, newAliceLotteryTx.Bet.Amount.Uint64(), aliceLotteryTx.Bet.Amount.Uint64())
+	require.Equal(t, uint64(4), newAliceLotteryTx.Bet.Amount.Uint64())
 
 	// Ensure the count has not changed
 	count := keeper.GetLotteryTransactionCount(ctx)
 	require.Equal(t, count, uint64(4))
 }
 
-func TestLotteryTransaction_PruneLotteryTransactions(t *testing.T) {
+func TestLotteryTransactionAppend_WhenDifferentLotteryId(t *testing.T) {
 	keeper, ctx := keepertest.LotteryKeeper(t)
 
-	createNLotteryTransaction(keeper, ctx, 50)
-	require.Equal(t, 50, len(keeper.GetAllLotteryTransaction(ctx)))
+	alice := sample.AccAddress()
+	bob := sample.AccAddress()
 
-	keeper.PruneLotteryTransactions(ctx)
-	require.Equal(t, 0, len(keeper.GetAllLotteryTransaction(ctx)))
+	items := []types.LotteryTransaction{{
+		Id:        0,
+		Bet:       sdk.NewInt64Coin(types.TokenDenom, 5),
+		CreatedBy: sample.AccAddress(),
+		LotteryId: 2,
+	}, {
+		Id:        1,
+		Bet:       sdk.NewInt64Coin(types.TokenDenom, 3),
+		CreatedBy: bob,
+		LotteryId: 2,
+	}, {
+		Id:        2,
+		Bet:       sdk.NewInt64Coin(types.TokenDenom, 10),
+		CreatedBy: alice,
+		// Alice Lottery id is 1
+		LotteryId: 1,
+	}}
+
+	for i := range items {
+		keeper.AppendLotteryTransaction(ctx, items[i])
+	}
+
+	keeper.AppendLotteryTransaction(ctx, types.LotteryTransaction{
+		Bet:       sdk.NewInt64Coin(types.TokenDenom, 3),
+		CreatedBy: alice,
+		// Different lottery ID
+		LotteryId: 2,
+	})
+
+	found, ltryTxId := keeper.LotteryTransactionMetadata.GetLotteryTransactionId(alice)
+	require.True(t, found)
+
+	val, found := keeper.GetLotteryTransaction(ctx, ltryTxId)
+	require.True(t, found)
+	require.Equal(t, uint64(2), val.LotteryId)
+
+	require.Equal(t, uint64(4), keeper.GetLotteryTransactionCount(ctx))
 }

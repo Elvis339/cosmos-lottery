@@ -55,7 +55,7 @@ func (m *LotteryTransactionMetadata) Set(lotteryTx types.LotteryTransaction) {
 	found, _ := m.GetLotteryTransactionId(address)
 	currBet := m.GetBet(address)
 
-	if !found && currBet.IsEqual(zero) {
+	if !found {
 		m.addressToLotteryTxId[address] = lotteryTx.Id
 	}
 
@@ -154,4 +154,53 @@ func (m *LotteryTransactionMetadata) GetLotteryTransactionId(address string) (bo
 		return false, 0
 	}
 	return true, lotteryTxId
+}
+
+// @todo: test-case this
+func (m *LotteryTransactionMetadata) RemoveLotteryTransactionId(address string) {
+	found, _ := m.GetLotteryTransactionId(address)
+	if found {
+		subAmount := m.GetBet(address)
+
+		minBetFound, minBetAmount, minAddr := m.GetMinBet()
+		if minBetFound && minAddr == address {
+			minVal := sdk.NewInt64Coin(types.TokenDenom, 100)
+			addr := ""
+			for key, v := range m.addressToBet {
+				if v.IsLT(minVal) && key != address {
+					minVal = v
+					addr = key
+				}
+			}
+			minBet = m.encodeBet(types.LotteryTransaction{
+				Bet:       minVal,
+				CreatedBy: addr,
+				LotteryId: 0, // lottery id doesnt matter for this
+			})
+			subAmount = minBetAmount
+		}
+
+		maxBetFound, maxBetAmount, maxAddr := m.GetMaxBet()
+		if maxBetFound && maxAddr == address {
+			maxVal := zero
+			addr := ""
+			for key, value := range m.addressToBet {
+				if value.Amount.Uint64() > maxVal.Amount.Uint64() && key != address {
+					maxVal = value
+					addr = key
+				}
+			}
+			maxBet = m.encodeBet(types.LotteryTransaction{
+				Bet:       maxVal,
+				CreatedBy: addr,
+				LotteryId: 0, // lottery id doesn't matter in this case
+			})
+			subAmount = maxBetAmount
+		}
+
+		betSum = betSum.Sub(subAmount)
+
+		delete(m.addressToLotteryTxId, address)
+		delete(m.addressToBet, address)
+	}
 }

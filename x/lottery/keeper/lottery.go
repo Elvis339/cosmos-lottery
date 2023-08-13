@@ -85,16 +85,16 @@ func (k Keeper) UpdateLotteryPool(ctx sdk.Context, index string, amount sdk.Coin
 func (k Keeper) EndLottery(goCtx context.Context, winner sdk.AccAddress) error {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	currentLotteryId, found := k.GetActiveLottery(ctx)
+	if !found {
+		panic("active lottery is not set!")
+	}
+
 	lotteryTransactionCount := k.GetLotteryTransactionCount(ctx)
 
 	// Early exit if we have less than 10 lottery tx in the block
 	if lotteryTransactionCount < 10 {
 		return nil
-	}
-
-	currentLotteryId, found := k.GetActiveLottery(ctx)
-	if !found {
-		panic("active lottery is not set!")
 	}
 
 	lottery, found := k.GetLottery(ctx, strconv.FormatUint(currentLotteryId.LotteryId, 10))
@@ -104,8 +104,8 @@ func (k Keeper) EndLottery(goCtx context.Context, winner sdk.AccAddress) error {
 
 	var nextLottery types.Lottery
 
-	highestBetFound, _, highestBetAddress := k.lotteryTxMeta.GetMaxBet()
-	lowestBetFound, _, lowestBetAddress := k.lotteryTxMeta.GetMinBet()
+	highestBetFound, _, highestBetAddress := k.LotteryTransactionMetadata.GetMaxBet()
+	lowestBetFound, _, lowestBetAddress := k.LotteryTransactionMetadata.GetMinBet()
 
 	// If winner placed the lowest bet, no payment is issued, current lottery pool is carried over
 	if lowestBetFound == true && winner.String() == lowestBetAddress {
@@ -116,11 +116,11 @@ func (k Keeper) EndLottery(goCtx context.Context, winner sdk.AccAddress) error {
 		// If the winner placed the highest bet, the entire pool is paid to the winner
 		if highestBetFound == true && winner.String() == highestBetAddress {
 			paymentAmount = lottery.Pool
-			nextLottery.Pool = types.Pool
 		} else {
 			// Winner did not place highest or lowest bet, the winner is paid the sum of all bets (without fees)
-			paymentAmount = k.lotteryTxMeta.GetBetSum()
+			paymentAmount = k.LotteryTransactionMetadata.GetBetSum()
 		}
+		nextLottery.Pool = types.Pool
 
 		// Issue payment
 		err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, winner, sdk.Coins{paymentAmount})
@@ -129,17 +129,20 @@ func (k Keeper) EndLottery(goCtx context.Context, winner sdk.AccAddress) error {
 		}
 	}
 
+	lottery.Winner = winner.String()
+	k.SetLottery(ctx, lottery)
+
 	// Prune in-memory data structure
-	k.lotteryTxMeta.Prune()
+	k.LotteryTransactionMetadata.Prune()
+
+	// next active lottery id
+	nextLotteryId := k.IncrementActiveLottery(ctx)
 
 	// Remove prev lotteries
-	k.PruneLotteryTransactions(ctx)
+	k.PruneLotteryTransactions(ctx, nextLotteryId)
 
 	// Reset counter
 	k.SetLotteryTransactionCount(ctx, 0)
-
-	nextLotteryId := k.IncrementActiveLottery(ctx)
-	// next active lottery id
 
 	// set new lottery with the new incremented active lottery
 	nextLottery.Index = strconv.FormatUint(nextLotteryId, 10)

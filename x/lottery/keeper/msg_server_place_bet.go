@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 	"cosmos-lottery/x/lottery/types"
+	"fmt"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"strconv"
@@ -26,10 +27,15 @@ func (k msgServer) PlaceBet(goCtx context.Context, msg *types.MsgPlaceBet) (*typ
 	bet := sdk.NewInt64Coin(types.TokenDenom, int64(msg.GetBet()))
 	amount := bet.Add(types.Fee).Add(types.MinBet)
 
+	if bet.IsLTE(types.MinBet) {
+
+		return nil, sdkerrors.Wrap(types.ErrMinBet, "")
+	}
+
 	balance := k.bankKeeper.GetBalance(ctx, addr, types.TokenDenom)
 
 	if balance.IsLT(amount) {
-		return nil, sdkerrors.ErrInsufficientFunds.Wrapf("could not place a bet")
+		return nil, sdkerrors.ErrInsufficientFunds.Wrapf(fmt.Sprintf("%s could not place a bet", msg.GetCreator()))
 	}
 
 	err = k.bankKeeper.SendCoinsFromAccountToModule(ctx, addr, types.ModuleName, sdk.Coins{amount})
@@ -39,7 +45,7 @@ func (k msgServer) PlaceBet(goCtx context.Context, msg *types.MsgPlaceBet) (*typ
 
 	k.AppendLotteryTransaction(ctx, types.LotteryTransaction{
 		Bet:       bet,
-		CreatedBy: msg.GetCreator(),
+		CreatedBy: addr.String(),
 		LotteryId: activeLottery.LotteryId,
 	})
 

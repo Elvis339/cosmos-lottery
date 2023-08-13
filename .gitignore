@@ -4,3 +4,5 @@ release/
 .idea/
 .vscode/
 .DS_Store
+bin/cosmos-lotteryd
+debug.log

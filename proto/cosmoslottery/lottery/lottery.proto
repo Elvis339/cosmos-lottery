@@ -10,5 +10,6 @@ message Lottery {
   string index = 1; 
   cosmos.base.v1beta1.Coin fee = 2 [(gogoproto.nullable) = false]; 
   cosmos.base.v1beta1.Coin pool = 3 [(gogoproto.nullable) = false];
+  string winner = 4;
 }
 

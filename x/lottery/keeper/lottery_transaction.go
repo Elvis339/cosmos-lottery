@@ -4,6 +4,7 @@ import (
 	"cosmos-lottery/x/lottery/types"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -35,7 +36,7 @@ func (k Keeper) SetLotteryTransactionCount(ctx sdk.Context, count uint64) {
 /*
 AppendLotteryTransaction
 On a new bet:
-1. Check if the user's address exists in the in-memory map (lotteryTxMeta).
+1. Check if the user's address exists in the in-memory map (LotteryTransactionMetadata).
 2. If the user's address is NOT present:
   - Add the user's address to the hash map.
   - Increment the transaction count.
@@ -49,29 +50,36 @@ func (k Keeper) AppendLotteryTransaction(
 	lotteryTransaction types.LotteryTransaction,
 ) uint64 {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.LotteryTransactionKey))
-	ltryTx := lotteryTransaction
+	isInMetadata, lotteryTxId := k.LotteryTransactionMetadata.GetLotteryTransactionId(lotteryTransaction.GetCreatedBy())
 
 	count := k.GetLotteryTransactionCount(ctx)
-	found, id := k.lotteryTxMeta.GetLotteryTransactionId(lotteryTransaction.GetCreatedBy())
 
-	if found {
-		lotteryTx, exist := k.GetLotteryTransaction(ctx, id)
-		if exist {
-			lotteryTx.Bet = ltryTx.Bet
+	lotteryTransaction.Id = count
+
+	if isInMetadata == true {
+		oldLotteryTx, oldLotteryTxExist := k.GetLotteryTransaction(ctx, lotteryTxId)
+		if oldLotteryTxExist == true {
+			if oldLotteryTx.CreatedBy == lotteryTransaction.CreatedBy {
+				if oldLotteryTx.LotteryId != lotteryTransaction.LotteryId {
+					// Because their lottery id is different `mesamo babe i zabe`
+					k.LotteryTransactionMetadata.RemoveLotteryTransactionId(lotteryTransaction.GetCreatedBy())
+					k.LotteryTransactionMetadata.Set(lotteryTransaction)
+					k.SetLotteryTransactionCount(ctx, count+1)
+				} else {
+					lotteryTransaction.Id = oldLotteryTx.Id
+				}
+			}
 		}
-		ltryTx = lotteryTx
 	} else {
-		ltryTx.Id = count
-
 		// Update meta
-		k.lotteryTxMeta.Set(lotteryTransaction)
+		k.LotteryTransactionMetadata.Set(lotteryTransaction)
 
 		// Update lotteryTransaction count
 		k.SetLotteryTransactionCount(ctx, count+1)
 	}
 
-	appendedValue := k.cdc.MustMarshal(&ltryTx)
-	store.Set(GetLotteryTransactionIDBytes(ltryTx.Id), appendedValue)
+	appendedValue := k.cdc.MustMarshal(&lotteryTransaction)
+	store.Set(GetLotteryTransactionIDBytes(lotteryTransaction.Id), appendedValue)
 
 	return count
 }
@@ -140,18 +148,29 @@ func (k Keeper) GetWinner(ctx sdk.Context) (*types.LotteryTransaction, error) {
 	result := binary.LittleEndian.Uint16(hash[len(hash)-2:])
 	winnerIndex := int(result) % numOfTx
 
-	return &all[winnerIndex], nil
+	ltryTx := &all[winnerIndex]
+
+	if ltryTx != nil {
+		return ltryTx, nil
+	}
+
+	return nil, errors.New(fmt.Sprintf("lottery tx with index=%d does not exist", winnerIndex))
 }
 
-// PruneLotteryTransactions iterate over the keys but avoids the unnecessary fetch of the entire transaction data.
-// This method deletes each key for the lottery transactions
-// within the prefixed store without needing to fetch and unmarshal the transactions.
-func (k Keeper) PruneLotteryTransactions(ctx sdk.Context) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.LotteryTransactionKey))
-	iterator := sdk.KVStorePrefixIterator(store, []byte{})
-	defer iterator.Close()
+func (k Keeper) PruneLotteryTransactions(ctx sdk.Context, activeLottery uint64) {
+	allLotteryTx := k.GetAllLotteryTransaction(ctx)
 
-	for ; iterator.Valid(); iterator.Next() {
-		store.Delete(iterator.Key())
+	prevLotteryId := activeLottery - 1
+
+	if prevLotteryId == 0 {
+		prevLotteryId = 1
+	}
+
+	ctx.Logger().Info(fmt.Sprintf("--------- REMOVING ALL LOTTERY TX WITH LOTTERY ID %d ---------", prevLotteryId))
+
+	for index, tx := range allLotteryTx {
+		if allLotteryTx[index].LotteryId == prevLotteryId {
+			k.RemoveLotteryTransaction(ctx, tx.Id)
+		}
 	}
 }

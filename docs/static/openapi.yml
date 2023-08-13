@@ -35005,6 +35005,8 @@ paths:
                         custom method
 
                         signatures required by gogoproto.
+                    winner:
+                      type: string
               pagination:
                 type: object
                 properties:
@@ -35155,6 +35157,8 @@ paths:
                       custom method
 
                       signatures required by gogoproto.
+                  winner:
+                    type: string
         default:
           description: An unexpected error response.
           schema:
@@ -71063,6 +71067,8 @@ definitions:
 
           NOTE: The amount field is an Int which implements the custom method
           signatures required by gogoproto.
+      winner:
+        type: string
   cosmoslottery.lottery.LotteryTransaction:
     type: object
     properties:
@@ -71131,6 +71137,8 @@ definitions:
                 method
 
                 signatures required by gogoproto.
+            winner:
+              type: string
       pagination:
         type: object
         properties:
@@ -71261,6 +71269,8 @@ definitions:
               method
 
               signatures required by gogoproto.
+          winner:
+            type: string
   cosmoslottery.lottery.QueryGetLotteryTransactionResponse:
     type: object
     properties:
